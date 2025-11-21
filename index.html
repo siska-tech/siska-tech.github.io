@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siska Tech - Retro Computing & Emulation</title>
+    <meta name="description" content="Python-based retro computing projects: emulators, chiptune players, and assemblers for 6502 and AY-3-8910">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-card: #1a1f3a;
+            --accent-primary: #00ff88;
+            --accent-secondary: #00d4ff;
+            --text-primary: #e0e6ed;
+            --text-secondary: #a0a8b5;
+            --gradient: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+            background: 
+                linear-gradient(45deg, transparent 48%, var(--accent-primary) 48%, var(--accent-primary) 52%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, var(--accent-secondary) 48%, var(--accent-secondary) 52%, transparent 52%);
+            background-size: 40px 40px;
+            animation: bgScroll 20s linear infinite;
+        }
+
+        @keyframes bgScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        header {
+            padding: 2rem;
+            text-align: center;
+            background: rgba(26, 31, 58, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        nav a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        nav a:hover {
+            color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--accent-secondary);
+            position: relative;
+            padding-bottom: 1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: var(--gradient);
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .project-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .project-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .project-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+
+        .project-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-tag {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid var(--accent-primary);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: var(--gradient);
+            color: var(--bg-dark);
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-item h3 {
+            color: var(--accent-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            background: var(--bg-card);
+            padding: 2rem;
+            text-align: center;
+            border-top: 2px solid var(--accent-primary);
+            margin-top: 4rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-primary);
+            transform: scale(1.2);
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Retro terminal effect */
+        .terminal {
+            background: #000;
+            color: var(--accent-primary);
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 2rem 0;
+            border: 2px solid var(--accent-primary);
+        }
+
+        .terminal::before {
+            content: '> ';
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <header>
+        <div class="logo">SISKA TECH</div>
+        <p class="tagline">Exploring the Past, Engineering the Future</p>
+        <nav>
+            <a href="#profile">Profile</a>
+            <a href="#projects">Projects</a>
+            <a href="#features">Features</a>
+            <a href="https://github.com/siska-tech" target="_blank">GitHub</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <section class="hero">
+            <h1 style="font-family: 'Courier New', monospace; letter-spacing: -2px;">
+                xlsx<span style="color: var(--text-primary);">zero</span>
+            </h1>
+            <h1>High-Performance Excel Writer in Rust</h1>
+            <p>
+                <strong style="color: var(--accent-primary);">Pure Rust. Zero Dependencies.</strong><br>
+                外部Cライブラリや不要な依存クレートを一切排除。<br>
+                圧倒的なパフォーマンスとメモリ安全性で、Excelファイルを高速生成。
+            </p>
+            
+            <div class="terminal">cargo add xlsxzero</div>
+            
+            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                <a href="https://github.com/siska-tech/xlsxzero" class="btn" target="_blank">
+                    View on GitHub
+                </a>
+                
+                <a href="./xlsxzero/index.html" class="btn" target="_blank">
+                    Run DEMO
+                </a>
+            </div>
+        </section>
+
+        <section id="profile" style="margin-bottom: 4rem;">
+            <h2 class="section-title">Profile</h2>
+            <div style="background: var(--bg-card); border-radius: 10px; padding: 2.5rem; border-left: 4px solid var(--accent-primary);">
+                <h3 style="color: var(--accent-secondary); margin-bottom: 1rem; font-size: 1.5rem;">Shion Watanabe / 渡邊 史穏</h3>
+                <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 1.5rem;">
+                    製造現場の最前線からDX・IoTプロジェクトまで、多様な技術領域を横断してきたエンジニア。
+                    宇宙・防衛システムの精密機器製造から始まり、ベンチャー企業、技術者派遣を経て、
+                    現在は外資系IT企業でテクニカルサポート業務に従事。
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 1.5rem;">
+                    機械設計（CAD）、組込みプログラミング（C/Python）、品質管理、AI画像識別、IoTシステム開発など、
+                    製造現場の泥臭さを知る実践派として、現場に寄り添った技術実装を得意とする。
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 1.5rem;">
+                    プライベートでは、レトロコンピューティングへの情熱から、6502 CPUエミュレーター、
+                    AY-3-8910サウンドチップエミュレーター、YMチップチューンプレイヤーなど、
+                    8ビット時代の技術を現代のPythonで再現するOSSプロジェクトを展開。
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.8;">
+                    二児の父として、ベトナム語学習に取り組みながら、北海道情報大学通信課程で経営とDXを学び直し中。
+                    「ベトナム人エンジニアと通訳なしで会話できる日本人エンジニア」を目指して日々挑戦を続けている。
+                </p>
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(160, 168, 181, 0.2);">
+                    <h4 style="color: var(--accent-primary); margin-bottom: 1rem;">Technical Stack</h4>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">C/C++</span>
+                        <span class="tech-tag">CAD (3D/2D)</span>
+                        <span class="tech-tag">Embedded Systems</span>
+                        <span class="tech-tag">IoT/DX</span>
+                        <span class="tech-tag">AI/ML</span>
+                        <span class="tech-tag">Image Recognition</span>
+                        <span class="tech-tag">Retro Computing</span>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <a href="https://note.com/siskatech/n/na4370e14f31d" target="_blank" style="color: var(--accent-secondary); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        📝 キャリアストーリーを読む →
+                    </a>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="projects">
+            <h2 class="section-title">プロジェクト</h2>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-icon">🎵</div>
+                    <h3>pyYMplay</h3>
+                    <p>Python製のYMチップチューン音楽プレイヤー。クラシックなチップチューンサウンドを現代で楽しめます。</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Audio</span>
+                        <span class="tech-tag">YM Format</span>
+                    </div>
+                    <a href="https://github.com/siska-tech/pyYMplay" class="btn" target="_blank">View Project</a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-icon">📄</div>
+                    <h3>ym_parser</h3>
+                    <p>YMファイル形式のパーサーライブラリ。チップチューンファイルの解析と処理を簡単に。</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Parser</span>
+                        <span class="tech-tag">Library</span>
+                    </div>
+                    <a href="https://github.com/siska-tech/ym_parser" class="btn" target="_blank">View Project</a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-icon">🔊</div>
+                    <h3>pypsgemu</h3>
+                    <p>AY-3-8910 プログラマブル・サウンド・ジェネレーターのエミュレーター。伝説的なサウンドチップを再現。</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Emulator</span>
+                        <span class="tech-tag">AY-3-8910</span>
+                    </div>
+                    <a href="https://github.com/siska-tech/pypsgemu" class="btn" target="_blank">View Project</a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-icon">💾</div>
+                    <h3>py6502emu</h3>
+                    <p>W65C02S CPUエミュレーター。Apple IIやAtari 2600で使用されたクラシックなプロセッサを実装。</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">6502</span>
+                        <span class="tech-tag">CPU</span>
+                    </div>
+                    <a href="https://github.com/siska-tech/py6502emu" class="btn" target="_blank">View Project</a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-icon">⚙️</div>
+                    <h3>pyasm6502</h3>
+                    <p>6502アセンブラコンパイラ。6502アセンブリ言語をマシンコードにコンパイル。</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Assembler</span>
+                        <span class="tech-tag">Compiler</span>
+                    </div>
+                    <a href="https://github.com/siska-tech/pyasm6502" class="btn" target="_blank">View Project</a>
+                </div>
+
+                <div class="project-card" style="border-color: var(--accent-primary); box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);">
+                    <div class="project-icon">📊</div>
+                    <h3>xlsxzero</h3>
+                    <p>依存関係なし（Zero Dependency）で動作するPython製Excelライブラリ。pandasやopenpyxlに頼らず、シンプルかつ高速にスプレッドシートを出力可能。</p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Excel</span>
+                        <span class="tech-tag">No Dependencies</span>
+                    </div>
+                    <a href="https://github.com/siska-tech/xlsxzero" class="btn" target="_blank">View Project</a>
+                </div>
+            </div>
+        </section>
+
+        <section style="text-align: center; padding: 3rem 0;">
+            <h2 class="section-title">Get Started</h2>
+            <p style="margin-bottom: 2rem; color: var(--text-secondary); font-size: 1.1rem;">
+                全てのプロジェクトはオープンソースで、GitHubで公開されています
+            </p>
+            <a href="https://github.com/siska-tech" class="btn" target="_blank">Visit GitHub Profile</a>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Siska Tech / Shion Watanabe. All rights reserved.</p>
+        <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+            製造現場からDXまで、技術で未来を創る | Made with ❤️ for retro computing enthusiasts
+        </p>
+        <div class="social-links">
+            <a href="https://github.com/siska-tech" target="_blank" title="GitHub">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+            </a>
+            <a href="https://note.com/siskatech" target="_blank" title="note">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+                    <path d="M8 12h8v2H8zm0 4h8v2H8zm0-8h5v2H8z"/>
+                </svg>
+            </a>
+        </div>
+    </footer>
+</body>
+</html>
