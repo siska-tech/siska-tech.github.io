@@ -1,0 +1,29 @@
+{
+  "name": "pure-onnx-ocr",
+  "type": "module",
+  "description": "Pure Rust OCR pipeline that runs PaddleOCR DBNet + SVTR ONNX models without C/C++ dependencies.",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/siska-tech/pure-onnx-ocr"
+  },
+  "files": [
+    "pure_onnx_ocr_bg.wasm",
+    "pure_onnx_ocr.js",
+    "pure_onnx_ocr.d.ts"
+  ],
+  "main": "pure_onnx_ocr.js",
+  "homepage": "https://github.com/siska-tech/pure-onnx-ocr",
+  "types": "pure_onnx_ocr.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "ocr",
+    "onnx",
+    "paddleocr",
+    "text-detection",
+    "text-recognition"
+  ]
+}
