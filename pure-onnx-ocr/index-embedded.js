@@ -2,13 +2,16 @@
 // このファイルは参考用です。実際にはモデルをビルド時に埋め込む必要があります。
 
 // Import the WASM module
-import init, { WasmOcrEngineBuilder, create_engine_with_embedded_models } from '../../pkg/pure_onnx_ocr.js';
+import init, { WasmOcrEngineBuilder, create_engine_with_embedded_models } from './pkg/pure_onnx_ocr.js';
 
 let engine = null;
 let wasmInitialized = false;
 
 // DOM elements
 const fileInput = document.getElementById('fileInput');
+const uploadSection = document.getElementById('uploadSection');
+const previewSection = document.getElementById('previewSection');
+const previewImage = document.getElementById('previewImage');
 const ocrBtn = document.getElementById('ocrBtn');
 const resultSection = document.getElementById('resultSection');
 const resultTextarea = document.getElementById('result');
@@ -48,15 +51,70 @@ async function initializeWasm() {
     }
 }
 
+// Read file as ArrayBuffer
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(new Error('ファイルの読み込みに失敗しました'));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 // Handle image file input
 fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
-        const bytes = await file.arrayBuffer();
-        currentImageBytes = bytes;
-        updateButtonStates();
+        await handleImageFile(file);
     }
 });
+
+// Handle drag and drop
+uploadSection.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadSection.classList.add('dragover');
+});
+
+uploadSection.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadSection.classList.remove('dragover');
+});
+
+uploadSection.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadSection.classList.remove('dragover');
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        await handleImageFile(file);
+    } else {
+        showStatus('画像ファイルを選択してください。', 'error');
+    }
+});
+
+// Handle image file
+async function handleImageFile(file) {
+    try {
+        currentImageBytes = await readFileAsArrayBuffer(file);
+        
+        // Show preview
+        if (previewSection && previewImage) {
+            const blob = new Blob([currentImageBytes], { type: file.type });
+            const url = URL.createObjectURL(blob);
+            previewImage.src = url;
+            previewSection.classList.remove('hidden');
+        }
+        
+        showStatus(`画像を読み込みました: ${file.name}`, 'success');
+        updateButtonStates();
+    } catch (error) {
+        showStatus(`画像の読み込みに失敗しました: ${error.message}`, 'error');
+        console.error('Image loading error:', error);
+    }
+}
 
 // Run OCR
 ocrBtn.addEventListener('click', async () => {

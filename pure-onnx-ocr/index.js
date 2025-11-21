@@ -1,7 +1,7 @@
 // Import the WASM module
 // Note: After running `wasm-pack build --target web --features wasm`, 
-// the module will be available at ../../pkg/pure_onnx_ocr.js
-import init, { WasmOcrEngineBuilder } from '../../pkg/pure_onnx_ocr.js';
+// the module will be available at ./pkg/pure_onnx_ocr.js
+import init, { WasmOcrEngineBuilder } from './pkg/pure_onnx_ocr.js';
 
 let engine = null;
 let wasmInitialized = false;
@@ -225,15 +225,19 @@ fileInput.addEventListener('change', async (e) => {
 // Handle drag and drop
 uploadSection.addEventListener('dragover', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     uploadSection.classList.add('dragover');
 });
 
-uploadSection.addEventListener('dragleave', () => {
+uploadSection.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     uploadSection.classList.remove('dragover');
 });
 
 uploadSection.addEventListener('drop', async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     uploadSection.classList.remove('dragover');
 
     const file = e.dataTransfer.files[0];
