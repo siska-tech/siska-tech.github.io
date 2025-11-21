@@ -98,8 +98,14 @@ async function loadModelsFromServer() {
     try {
         showStatus('モデルファイルをサーバーから読み込んでいます...', 'loading');
         
-        // デフォルトのパス（必要に応じて変更してください）
-        const modelBasePath = './ppocrv5';
+        // GitHub Pages対応: 現在のページのパスを基準にモデルファイルのパスを構築
+        // 例: /pure-onnx-ocr/examples/wasm-demo/ の場合、./ppocrv5 が正しく解決される
+        // 現在のHTMLファイルのディレクトリを取得
+        const currentPath = window.location.pathname;
+        const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        const modelBasePath = `${basePath}/ppocrv5`;
+        
+        console.log('Loading models from:', modelBasePath);
         
         const [detResponse, recResponse, dictResponse] = await Promise.all([
             fetch(`${modelBasePath}/det.onnx`),

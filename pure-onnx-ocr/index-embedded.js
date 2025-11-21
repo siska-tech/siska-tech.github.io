@@ -31,10 +31,15 @@ async function initializeWasm() {
         // この例では、fetch を使ってモデルファイルを読み込みます。
         showStatus('モデルファイルを読み込んでいます...', 'loading');
         
+        // GitHub Pages対応: 現在のページのパスを基準にモデルファイルのパスを構築
+        const currentPath = window.location.pathname;
+        const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        const modelBasePath = `${basePath}/ppocrv5`;
+        
         const [detBytes, recBytes, dictBytes] = await Promise.all([
-            fetch('./ppocrv5/det.onnx').then(r => r.arrayBuffer()),
-            fetch('./ppocrv5/rec.onnx').then(r => r.arrayBuffer()),
-            fetch('./ppocrv5/ppocrv5_dict.txt').then(r => r.arrayBuffer()),
+            fetch(`${modelBasePath}/det.onnx`).then(r => r.arrayBuffer()),
+            fetch(`${modelBasePath}/rec.onnx`).then(r => r.arrayBuffer()),
+            fetch(`${modelBasePath}/ppocrv5_dict.txt`).then(r => r.arrayBuffer()),
         ]);
 
         showStatus('OCRエンジンを初期化しています...', 'loading');
