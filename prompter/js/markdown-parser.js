@@ -74,7 +74,8 @@ class MarkdownParser {
         }
         
         // プレースホルダーとして保存（HTMLエスケープを適用）
-        const placeholder = `__RUBY_TAG_${this.protectedRubyTags.length}__`;
+        // アンダースコアを使わない形式で、marked.jsの強調処理を回避
+        const placeholder = `RUBY_PLACEHOLDER_${this.protectedRubyTags.length}`;
         this.protectedRubyTags.push(`<ruby>${this.escapeHtml(kanji)}<rt>${this.escapeHtml(ruby)}</rt></ruby>`);
         return placeholder;
       });
@@ -90,7 +91,8 @@ class MarkdownParser {
         }
         
         // プレースホルダーとして保存（HTMLエスケープを適用）
-        const placeholder = `__RUBY_TAG_${this.protectedRubyTags.length}__`;
+        // アンダースコアを使わない形式で、marked.jsの強調処理を回避
+        const placeholder = `RUBY_PLACEHOLDER_${this.protectedRubyTags.length}`;
         this.protectedRubyTags.push(`<ruby>${this.escapeHtml(kanji)}<rt>${this.escapeHtml(ruby)}</rt></ruby>`);
         return placeholder;
       });
@@ -115,23 +117,11 @@ class MarkdownParser {
     try {
       // 逆順に置換することで、インデックスの問題を回避
       for (let i = this.protectedRubyTags.length - 1; i >= 0; i--) {
-        const placeholder = `__RUBY_TAG_${i}__`;
+        const placeholder = `RUBY_PLACEHOLDER_${i}`;
         const tag = this.protectedRubyTags[i];
-        
         // すべての出現を置換（正規表現を使用）
-        // エスケープされたプレースホルダーも処理（&lt; や &gt; など）
-        const escapedPlaceholder = this.escapeRegex(placeholder);
-        const regex = new RegExp(escapedPlaceholder, 'g');
+        const regex = new RegExp(this.escapeRegex(placeholder), 'g');
         html = html.replace(regex, tag);
-        
-        // HTMLエンティティとしてエスケープされた場合も処理
-        const htmlEntityPlaceholder = placeholder
-          .replace(/_/g, '&#95;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-        if (html.includes(htmlEntityPlaceholder)) {
-          html = html.replace(new RegExp(this.escapeRegex(htmlEntityPlaceholder), 'g'), tag);
-        }
       }
       
       // 保護用の配列をクリア
@@ -161,8 +151,9 @@ class MarkdownParser {
     try {
       // <ruby>タグを一時的に置換して保護
       // ネストされたタグにも対応（非貪欲マッチ）
+      // アンダースコアを使わない形式で、marked.jsの強調処理を回避
       text = text.replace(/<ruby>[\s\S]*?<\/ruby>/gi, (match) => {
-        const id = `__RUBY_TAG_${this.protectedRubyTags.length}__`;
+        const id = `RUBY_PLACEHOLDER_${this.protectedRubyTags.length}`;
         this.protectedRubyTags.push(match);
         return id;
       });
@@ -196,30 +187,21 @@ class MarkdownParser {
       html = html.replace(/(<p[^>]*>\s*<\/p>\s*)+/gi, '');
       html = html.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
       
-      // 不要な空白を削除（ただし、ルビタグ内とプレースホルダーは保護するため、一時的に保護）
-      const protectedItems = [];
-      
-      // まず、プレースホルダー（__RUBY_TAG_0__ など）を保護
-      html = html.replace(/__RUBY_TAG_\d+__/g, (match) => {
-        const placeholder = `__RUBY_PLACEHOLDER_${protectedItems.length}__`;
-        protectedItems.push(match);
-        return placeholder;
-      });
-      
-      // 次に、<ruby>タグを保護
+      // 不要な空白を削除（ただし、ルビタグ内は保護するため、ルビタグを一時的に保護）
+      const rubyPlaceholders = [];
       html = html.replace(/<ruby>[\s\S]*?<\/ruby>/gi, (match) => {
-        const placeholder = `__RUBY_PLACEHOLDER_${protectedItems.length}__`;
-        protectedItems.push(match);
+        const placeholder = `TEMP_RUBY_${rubyPlaceholders.length}`;
+        rubyPlaceholders.push(match);
         return placeholder;
       });
       
       // 空白を削除
       html = html.replace(/>\s+</g, '><');
       
-      // 保護したアイテムを復元（逆順に復元）
-      for (let i = protectedItems.length - 1; i >= 0; i--) {
-        html = html.replace(`__RUBY_PLACEHOLDER_${i}__`, protectedItems[i]);
-      }
+      // ルビタグを復元
+      rubyPlaceholders.forEach((ruby, index) => {
+        html = html.replace(`TEMP_RUBY_${index}`, ruby);
+      });
       
       // セマンティックなHTMLの確保（既にカスタムレンダラーで処理済み）
       
