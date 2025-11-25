@@ -30,6 +30,7 @@ class I18n {
         'font-size': 'フォントサイズ',
         'scroll-speed': 'スクロール速度',
         'theme': 'テーマ',
+        'text-align': 'テキスト配置',
         'line-height': '行間調整',
         'ruby-display': 'ふりがな表示',
         'language': '言語',
@@ -38,6 +39,11 @@ class I18n {
         'theme-dark': 'ダーク',
         'theme-light': 'ライト',
         'theme-sepia': 'セピア',
+        
+        // テキスト配置
+        'text-align-left': '左揃え',
+        'text-align-center': '中央揃え',
+        'text-align-right': '右揃え',
         
         // フォントサイズ
         'font-small': '小',
@@ -103,6 +109,7 @@ class I18n {
         'font-size': 'Font Size',
         'scroll-speed': 'Scroll Speed',
         'theme': 'Theme',
+        'text-align': 'Text Alignment',
         'line-height': 'Line Height',
         'ruby-display': 'Ruby Display',
         'language': 'Language',
@@ -111,6 +118,11 @@ class I18n {
         'theme-dark': 'Dark',
         'theme-light': 'Light',
         'theme-sepia': 'Sepia',
+        
+        // Text alignment
+        'text-align-left': 'Left',
+        'text-align-center': 'Center',
+        'text-align-right': 'Right',
         
         // Font sizes
         'font-small': 'Small',
@@ -176,6 +188,7 @@ class I18n {
         'font-size': 'Cỡ chữ',
         'scroll-speed': 'Tốc độ cuộn',
         'theme': 'Giao diện',
+        'text-align': 'Căn chỉnh văn bản',
         'line-height': 'Khoảng cách dòng',
         'ruby-display': 'Hiển thị ruby',
         'language': 'Ngôn ngữ',
@@ -184,6 +197,11 @@ class I18n {
         'theme-dark': 'Tối',
         'theme-light': 'Sáng',
         'theme-sepia': 'Sepia',
+        
+        // Text alignment
+        'text-align-left': 'Trái',
+        'text-align-center': 'Giữa',
+        'text-align-right': 'Phải',
         
         // Font sizes
         'font-small': 'Nhỏ',

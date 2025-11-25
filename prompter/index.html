@@ -114,6 +114,26 @@
         </div>
 
         <div class="setting-item">
+          <fieldset class="theme-selector">
+            <legend class="setting-label" data-i18n="text-align">テキスト配置</legend>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="text-align" value="left" id="text-align-left" class="radio-input" aria-label="i18n:text-align-left">
+                <span data-i18n="text-align-left">左揃え</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="text-align" value="center" id="text-align-center" class="radio-input" checked aria-label="i18n:text-align-center">
+                <span data-i18n="text-align-center">中央揃え</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="text-align" value="right" id="text-align-right" class="radio-input" aria-label="i18n:text-align-right">
+                <span data-i18n="text-align-right">右揃え</span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="setting-item">
           <label for="line-height-slider" class="setting-label" data-i18n="line-height">行間調整</label>
           <input type="range" id="line-height-slider" class="slider" min="1" max="5" value="3" step="1" aria-label="i18n:line-height">
           <div class="slider-labels">

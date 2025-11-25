@@ -207,9 +207,22 @@ body.control-bar-minimized .main {
   width: 100%;
   max-width: 900px;
   padding: 24px 16px;
-  text-align: center;
+  text-align: center; /* デフォルトは中央揃え */
   line-height: var(--line-height-base);
-  transition: font-size var(--transition-duration) ease, line-height var(--transition-duration) ease;
+  transition: font-size var(--transition-duration) ease, line-height var(--transition-duration) ease, text-align var(--transition-duration) ease;
+}
+
+/* テキスト配置 */
+.prompter-content.text-align-left {
+  text-align: left;
+}
+
+.prompter-content.text-align-center {
+  text-align: center;
+}
+
+.prompter-content.text-align-right {
+  text-align: right;
 }
 
 .prompter-content p {

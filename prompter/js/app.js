@@ -28,6 +28,7 @@ class PrompterApp {
     this.fontSizeSlider = document.getElementById('font-size-slider');
     this.scrollSpeedSlider = document.getElementById('scroll-speed-slider');
     this.themeRadios = document.querySelectorAll('input[name="theme"]');
+    this.textAlignRadios = document.querySelectorAll('input[name="text-align"]');
     this.lineHeightSlider = document.getElementById('line-height-slider');
     this.rubyDisplayToggle = document.getElementById('ruby-display-toggle');
     this.languageSelect = document.getElementById('language-select');
@@ -41,6 +42,8 @@ class PrompterApp {
     this.wakeLock = null;
     this.highlightInterval = null;
     this.currentHighlightElement = null;
+    this.scrollInterval = null; // フォールバック用のsetInterval
+    this.lastUpdateTime = null; // 最後の更新時刻
     
     // スクロール速度の段階設定（ピクセル/秒）
     this.speedLevels = [10, 25, 50, 75, 100]; // 遅い、やや遅い、標準、やや速い、速い
@@ -193,6 +196,16 @@ class PrompterApp {
       });
     }
 
+    if (this.textAlignRadios.length > 0) {
+      this.textAlignRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            this.updateTextAlign(e.target.value);
+          }
+        });
+      });
+    }
+
     if (this.lineHeightSlider) {
       this.lineHeightSlider.addEventListener('input', (e) => {
         this.updateLineHeight(e.target.value);
@@ -257,6 +270,33 @@ class PrompterApp {
     // 設定変更イベントをリッスン
     window.addEventListener('settingsChanged', (e) => {
       this.onSettingsChanged(e.detail.settings);
+    });
+    
+    // Page Visibility API: ページが非表示になった場合でもスクロールを継続
+    document.addEventListener('visibilitychange', () => {
+      if (this.isPlaying) {
+        if (document.hidden) {
+          // ページが非表示になった場合、lastUpdateTimeをリセットして正確な時間計算を維持
+          this.lastUpdateTime = null;
+        } else {
+          // ページが再表示された場合、スクロール位置を再計算
+          if (this.main) {
+            const currentTime = performance.now();
+            const elapsed = (currentTime - this.scrollStartTime) / 1000;
+            const scrollDistance = this.scrollSpeed * elapsed;
+            const targetScrollTop = this.scrollStartPosition + scrollDistance;
+            const maxScrollTop = this.main.scrollHeight - this.main.clientHeight;
+            
+            if (targetScrollTop < maxScrollTop) {
+              this.main.scrollTop = targetScrollTop;
+            } else {
+              this.main.scrollTop = maxScrollTop;
+            }
+            
+            this.lastUpdateTime = currentTime;
+          }
+        }
+      }
     });
   }
 
@@ -434,6 +474,7 @@ class PrompterApp {
       this.isPlaying = true;
       this.scrollStartTime = performance.now();
       this.scrollStartPosition = this.main.scrollTop;
+      this.lastUpdateTime = null; // リセット
       
       // 画面ロック防止
       this.requestWakeLock();
@@ -449,6 +490,9 @@ class PrompterApp {
           // ハイライト機能を有効化
           this.startHighlight();
           
+          // フォールバック用のsetIntervalを開始（requestAnimationFrameが停止した場合の保険）
+          this.startScrollFallback();
+          
           // アニメーション開始
           this.animateScroll();
         }, 100); // 100ms待つ
@@ -461,6 +505,7 @@ class PrompterApp {
     if (!this.isPlaying) return;
     
     this.isPlaying = false;
+    this.lastUpdateTime = null;
     
     // 画面ロック解除
     this.releaseWakeLock();
@@ -469,6 +514,9 @@ class PrompterApp {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+    
+    // フォールバック用のsetIntervalを停止
+    this.stopScrollFallback();
     
     // ハイライト機能を停止
     this.stopHighlight();
@@ -481,6 +529,49 @@ class PrompterApp {
       this.pauseBtn.classList.add('hidden');
     }
   }
+  
+  // フォールバック用のスクロール（requestAnimationFrameが停止した場合の保険）
+  startScrollFallback() {
+    // 既に開始されている場合は停止
+    this.stopScrollFallback();
+    
+    // 16ms間隔（約60fps）でスクロール位置を更新
+    // これはrequestAnimationFrameが停止した場合のフォールバック
+    this.scrollInterval = setInterval(() => {
+      if (!this.isPlaying || !this.main) {
+        this.stopScrollFallback();
+        return;
+      }
+      
+      // ページが非表示の場合は、時間ベースでスクロールを継続
+      const currentTime = performance.now();
+      const elapsed = (currentTime - this.scrollStartTime) / 1000; // 秒
+      const scrollDistance = this.scrollSpeed * elapsed;
+      const targetScrollTop = this.scrollStartPosition + scrollDistance;
+      
+      const maxScrollTop = this.main.scrollHeight - this.main.clientHeight;
+      
+      if (maxScrollTop <= 0) {
+        this.stopAutoScroll();
+        return;
+      }
+      
+      if (targetScrollTop < maxScrollTop) {
+        this.main.scrollTop = targetScrollTop;
+      } else {
+        this.main.scrollTop = maxScrollTop;
+        this.stopAutoScroll();
+      }
+    }, 16); // 約60fps
+  }
+  
+  // フォールバック用のスクロールを停止
+  stopScrollFallback() {
+    if (this.scrollInterval) {
+      clearInterval(this.scrollInterval);
+      this.scrollInterval = null;
+    }
+  }
 
   // スクロールアニメーション
   animateScroll() {
@@ -489,6 +580,18 @@ class PrompterApp {
     }
     
     const currentTime = performance.now();
+    
+    // ページが非表示の場合でも、時間ベースでスクロールを継続
+    // 最後の更新時刻を記録
+    if (this.lastUpdateTime === null) {
+      this.lastUpdateTime = currentTime;
+    }
+    
+    // ページが非表示になっている場合、経過時間を正確に計算
+    const timeDelta = currentTime - this.lastUpdateTime;
+    this.lastUpdateTime = currentTime;
+    
+    // 経過時間に基づいてスクロール距離を計算（ミリ秒単位）
     const elapsed = (currentTime - this.scrollStartTime) / 1000; // 秒
     const scrollDistance = this.scrollSpeed * elapsed;
     const targetScrollTop = this.scrollStartPosition + scrollDistance;
@@ -604,6 +707,7 @@ class PrompterApp {
       if (this.isPlaying && this.main) {
         this.scrollStartTime = performance.now();
         this.scrollStartPosition = this.main.scrollTop;
+        this.lastUpdateTime = null;
       }
       
       console.log(`スクロール速度: ${this.scrollSpeed} px/s`);
@@ -625,6 +729,7 @@ class PrompterApp {
       if (this.isPlaying && this.main) {
         this.scrollStartTime = performance.now();
         this.scrollStartPosition = this.main.scrollTop;
+        this.lastUpdateTime = null;
       }
       
       console.log(`スクロール速度: ${this.scrollSpeed} px/s`);
@@ -827,6 +932,14 @@ class PrompterApp {
       });
     }
     
+    // テキスト配置ラジオボタン
+    if (this.textAlignRadios.length > 0) {
+      const textAlign = settingsManager.get('textAlign');
+      this.textAlignRadios.forEach(radio => {
+        radio.checked = (radio.value === textAlign);
+      });
+    }
+    
     // 行間スライダー
     if (this.lineHeightSlider) {
       const lineHeight = settingsManager.get('lineHeight');
@@ -865,6 +978,7 @@ class PrompterApp {
       if (this.isPlaying && this.main) {
         this.scrollStartTime = performance.now();
         this.scrollStartPosition = this.main.scrollTop;
+        this.lastUpdateTime = null;
       }
     }
   }
@@ -893,6 +1007,7 @@ class PrompterApp {
       if (this.isPlaying && this.main) {
         this.scrollStartTime = performance.now();
         this.scrollStartPosition = this.main.scrollTop;
+        this.lastUpdateTime = null;
       }
     }
   }
@@ -901,6 +1016,12 @@ class PrompterApp {
   updateTheme(theme) {
     if (typeof settingsManager === 'undefined') return;
     settingsManager.set('theme', theme);
+  }
+
+  // テキスト配置を更新
+  updateTextAlign(textAlign) {
+    if (typeof settingsManager === 'undefined') return;
+    settingsManager.set('textAlign', textAlign);
   }
 
   // 行間を更新

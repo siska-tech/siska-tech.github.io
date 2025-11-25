@@ -6,6 +6,7 @@ class SettingsManager {
       fontSize: 'normal',
       scrollSpeed: 50,
       theme: 'dark',
+      textAlign: 'center',
       lineHeight: 'normal',
       showRuby: true,
       language: 'ja',
@@ -96,6 +97,8 @@ class SettingsManager {
         return typeof value === 'number' && value >= 10 && value <= 200;
       case 'theme':
         return ['dark', 'light', 'sepia'].includes(value);
+      case 'textAlign':
+        return ['left', 'center', 'right'].includes(value);
       case 'lineHeight':
         return ['small', 'normal', 'large'].includes(value);
       case 'showRuby':
@@ -138,6 +141,10 @@ class SettingsManager {
     // フォントサイズクラス
     content.className = content.className.replace(/font-\w+/g, '');
     content.classList.add(`font-${this.get('fontSize')}`);
+
+    // テキスト配置クラス
+    content.className = content.className.replace(/text-align-\w+/g, '');
+    content.classList.add(`text-align-${this.get('textAlign')}`);
 
     // 行間クラス
     content.className = content.className.replace(/line-height-\w+/g, '');
