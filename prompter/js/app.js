@@ -703,19 +703,30 @@ class PrompterApp {
     
     if (isExpanded) {
       this.header.classList.add('minimized');
+      document.body.classList.add('header-minimized');
       this.headerToggle.setAttribute('aria-expanded', 'false');
       const icon = this.headerToggle.querySelector('.toggle-icon');
       if (icon) icon.textContent = '+';
       if (typeof i18n !== 'undefined') {
         this.headerToggle.setAttribute('aria-label', i18n.t('header-expand'));
       }
+      // トグルボタンをbodyに移動して、親要素の影響を受けないようにする
+      this.headerToggle.classList.add('floating-toggle');
+      document.body.appendChild(this.headerToggle);
     } else {
       this.header.classList.remove('minimized');
+      document.body.classList.remove('header-minimized');
       this.headerToggle.setAttribute('aria-expanded', 'true');
       const icon = this.headerToggle.querySelector('.toggle-icon');
       if (icon) icon.textContent = '−';
       if (typeof i18n !== 'undefined') {
         this.headerToggle.setAttribute('aria-label', i18n.t('header-minimize'));
+      }
+      // トグルボタンを元の位置に戻す
+      this.headerToggle.classList.remove('floating-toggle');
+      const headerContent = this.header.querySelector('.header-content');
+      if (headerContent) {
+        headerContent.appendChild(this.headerToggle);
       }
     }
   }
@@ -728,19 +739,30 @@ class PrompterApp {
     
     if (isExpanded) {
       this.controlBar.classList.add('minimized');
+      document.body.classList.add('control-bar-minimized');
       this.controlBarToggle.setAttribute('aria-expanded', 'false');
       const icon = this.controlBarToggle.querySelector('.toggle-icon');
       if (icon) icon.textContent = '+';
       if (typeof i18n !== 'undefined') {
         this.controlBarToggle.setAttribute('aria-label', i18n.t('control-bar-expand'));
       }
+      // トグルボタンをbodyに移動して、親要素の影響を受けないようにする
+      this.controlBarToggle.classList.add('floating-toggle');
+      document.body.appendChild(this.controlBarToggle);
     } else {
       this.controlBar.classList.remove('minimized');
+      document.body.classList.remove('control-bar-minimized');
       this.controlBarToggle.setAttribute('aria-expanded', 'true');
       const icon = this.controlBarToggle.querySelector('.toggle-icon');
       if (icon) icon.textContent = '−';
       if (typeof i18n !== 'undefined') {
         this.controlBarToggle.setAttribute('aria-label', i18n.t('control-bar-minimize'));
+      }
+      // トグルボタンを元の位置に戻す
+      this.controlBarToggle.classList.remove('floating-toggle');
+      const controlBarContent = this.controlBar.querySelector('.control-bar-content');
+      if (controlBarContent) {
+        controlBarContent.appendChild(this.controlBarToggle);
       }
     }
   }
