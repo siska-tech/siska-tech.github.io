@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>プロンプター - 結婚式MC用</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-dark">
+  <header id="header" class="header" role="banner">
+    <div class="header-content">
+      <button id="settings-btn" class="btn btn-icon" aria-label="i18n:aria-settings-open">
+        <span class="btn-text" data-i18n="settings">設定</span>
+      </button>
+      <button id="file-btn" class="btn btn-icon" aria-label="i18n:aria-file-select">
+        <span class="btn-text" data-i18n="file">ファイル</span>
+      </button>
+      <button id="fullscreen-btn" class="btn btn-icon" aria-label="i18n:aria-fullscreen">
+        <span class="btn-text" data-i18n="fullscreen">全画面</span>
+      </button>
+      <button id="header-toggle" class="btn btn-icon header-toggle" aria-label="i18n:header-minimize" aria-expanded="true">
+        <span class="toggle-icon">−</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" class="main" role="main">
+    <div id="prompter-content" class="prompter-content" role="article" aria-label="i18n:aria-prompter-content">
+      <p class="placeholder-text" data-i18n="placeholder">ファイルを選択して原稿を表示してください</p>
+    </div>
+  </main>
+
+  <div id="control-bar" class="control-bar" role="toolbar" aria-label="i18n:aria-controls">
+    <div class="control-bar-content">
+      <button id="play-btn" class="btn btn-control" aria-label="i18n:play">
+        <span class="btn-text" data-i18n="play">再生</span>
+      </button>
+      <button id="pause-btn" class="btn btn-control hidden" aria-label="i18n:pause">
+        <span class="btn-text" data-i18n="pause">一時停止</span>
+      </button>
+      <button id="speed-decrease-btn" class="btn btn-control" aria-label="i18n:speed-decrease">
+        <span class="btn-text" data-i18n="speed-decrease-btn">速度−</span>
+      </button>
+      <button id="speed-increase-btn" class="btn btn-control" aria-label="i18n:speed-increase">
+        <span class="btn-text" data-i18n="speed-increase-btn">速度＋</span>
+      </button>
+      <button id="reset-btn" class="btn btn-control" aria-label="i18n:reset">
+        <span class="btn-text" data-i18n="reset">リセット</span>
+      </button>
+      <button id="control-bar-toggle" class="btn btn-icon control-bar-toggle" aria-label="i18n:control-bar-minimize" aria-expanded="true">
+        <span class="toggle-icon">−</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="settings-modal hidden" role="dialog" aria-labelledby="settings-title" aria-modal="true">
+    <div class="settings-modal-overlay"></div>
+    <div class="settings-modal-content">
+      <div class="settings-modal-header">
+        <h2 id="settings-title" class="settings-title" data-i18n="settings-title">設定</h2>
+        <button id="settings-close-btn" class="btn btn-icon btn-close" aria-label="i18n:close">
+          <span class="btn-text" data-i18n="close">閉じる</span>
+        </button>
+      </div>
+      <div class="settings-modal-body">
+        <div class="setting-item">
+          <label for="font-size-slider" class="setting-label">フォントサイズ</label>
+          <input type="range" id="font-size-slider" class="slider" min="1" max="6" value="2" step="1" aria-label="フォントサイズ">
+          <div class="slider-labels">
+            <span>小</span>
+            <span>標準</span>
+            <span>大</span>
+            <span>最大</span>
+            <span>超大</span>
+            <span>特大</span>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <label for="scroll-speed-slider" class="setting-label" data-i18n="scroll-speed">スクロール速度</label>
+          <input type="range" id="scroll-speed-slider" class="slider" min="1" max="5" value="3" step="1" aria-label="i18n:scroll-speed">
+          <div class="slider-labels">
+            <span data-i18n="speed-slow">遅い</span>
+            <span data-i18n="speed-slowish">やや遅い</span>
+            <span data-i18n="speed-normal">標準</span>
+            <span data-i18n="speed-fastish">やや速い</span>
+            <span data-i18n="speed-fast">速い</span>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <fieldset class="theme-selector">
+            <legend class="setting-label" data-i18n="theme">テーマ</legend>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="theme" value="dark" id="theme-dark" class="radio-input" checked aria-label="i18n:theme-dark">
+                <span data-i18n="theme-dark">ダーク</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="theme" value="light" id="theme-light" class="radio-input" aria-label="i18n:theme-light">
+                <span data-i18n="theme-light">ライト</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="theme" value="sepia" id="theme-sepia" class="radio-input" aria-label="i18n:theme-sepia">
+                <span data-i18n="theme-sepia">セピア</span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="setting-item">
+          <label for="line-height-slider" class="setting-label" data-i18n="line-height">行間調整</label>
+          <input type="range" id="line-height-slider" class="slider" min="1" max="5" value="3" step="1" aria-label="i18n:line-height">
+          <div class="slider-labels">
+            <span data-i18n="line-narrow">狭い</span>
+            <span data-i18n="line-narrowish">やや狭い</span>
+            <span data-i18n="line-normal">標準</span>
+            <span data-i18n="line-wideish">やや広い</span>
+            <span data-i18n="line-wide">広い</span>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <label class="toggle-label" for="ruby-display-toggle">
+            <span class="setting-label" data-i18n="ruby-display">ふりがな表示</span>
+            <input type="checkbox" id="ruby-display-toggle" class="toggle-input" checked aria-label="i18n:ruby-display">
+            <span class="toggle-switch"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <label for="language-select" class="setting-label" data-i18n="language">言語</label>
+          <select id="language-select" class="language-select" aria-label="i18n:language">
+            <option value="ja" data-i18n="lang-ja">日本語</option>
+            <option value="en" data-i18n="lang-en">English</option>
+            <option value="vi" data-i18n="lang-vi">Tiếng Việt</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept=".md,.txt" class="hidden" aria-label="ファイルを選択">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/markdown-parser.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+
