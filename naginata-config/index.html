@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>薙刀式キーボード 設定ツール — PCカスタマイズ</title>
+  <meta name="description" content="薙刀式 分割キーボードの配列（単打・シフト面・コンボ・編集モード）とパラメータを、PCのブラウザ(WebHID)から再ビルド無しに編集・反映する設定ツール。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>薙刀式キーボード 設定ツール <span class="sub">PCカスタマイズ (#12 フェーズ2)</span></h1>
+
+  <p class="lead">
+    USB接続した薙刀式キーボードの<strong>配列（単打・シフト面・コンボ・編集モード）</strong>と
+    <strong>パラメータ</strong>を、再ビルド／UF2書込みなしに編集します。Chrome / Edge（WebHID対応）専用。
+    変更は <strong>COMMIT で端末フラッシュへ保存</strong>し、<strong>再起動後に反映</strong>されます。
+  </p>
+
+  <div class="bar">
+    <button id="connectBtn">端末に接続</button>
+    <button id="rereadBtn" disabled>端末から再読込</button>
+    <span id="status" class="status">未接続</span>
+  </div>
+
+  <div id="unsupported" class="warn" style="display:none;">
+    このブラウザは WebHID 非対応です。Chrome / Edge（デスクトップ版）で開いてください。
+  </div>
+
+  <main id="panel" style="display:none;">
+    <div class="tabs">
+      <button class="tab active" data-tab="params">パラメータ</button>
+      <button class="tab" data-tab="layout">レイアウト</button>
+      <button class="tab" data-tab="layers">単打・シフト面</button>
+      <button class="tab" data-tab="combos">コンボ</button>
+      <button class="tab" data-tab="modes">編集モード</button>
+    </div>
+
+    <section class="tabpane" id="tab-params">
+      <div class="params-grid" id="paramsGrid"></div>
+      <div class="actions"><button id="writeParamsBtn">パラメータを端末へ送る</button></div>
+    </section>
+
+    <section class="tabpane" id="tab-layout" style="display:none;">
+      <p class="note">物理配置の上で編集。薙刀式キーは単打面のかな/キーを直接編集。未使用の物理キーは「学習」で位置を取り込み、直接キー（F1-12/Del/PageUp/矢印/Win等）やマクロを割当。</p>
+      <div class="kbwrap"><div id="kbdLeft" class="kbhalf"></div><div id="kbdRight" class="kbhalf"></div></div>
+      <h3>未使用キーの直接割当</h3>
+      <div class="bar"><button id="learnBtn">＋ キーを学習</button><span id="learnStatus" class="status"></span></div>
+      <div id="extraList"></div>
+      <div class="actions"><button id="writeLayoutBtn">変更を端末へ送る（単打＋直接キー）</button><span id="layoutDirty" class="dirty"></span></div>
+    </section>
+
+    <section class="tabpane" id="tab-layers" style="display:none;">
+      <p class="note">面ごとに sc→かな（または特殊キー）を編集。かなは直接入力、キー操作は記号を追加。</p>
+      <div id="layersGroups"></div>
+      <div class="actions"><button id="writeLayersBtn">変更した単打・シフト面を送る</button><span id="layersDirty" class="dirty"></span></div>
+    </section>
+
+    <section class="tabpane" id="tab-combos" style="display:none;">
+      <p class="note">2キー／3キー同時押しコンボのかな。既存の置換＋空欄行で新規追加も可。</p>
+      <h3>2キーコンボ</h3><div class="combo-list" id="combo2List"></div>
+      <h3>3キーコンボ</h3><div class="combo-list" id="combo3List"></div>
+      <div class="actions"><button id="writeCombosBtn">変更したコンボを送る</button><span id="combosDirty" class="dirty"></span></div>
+    </section>
+
+    <section class="tabpane" id="tab-modes" style="display:none;">
+      <p class="note">編集モード1/2の各キーのキー操作（カーソル/コピペ等）を記号列で編集。</p>
+      <div id="modesGroups"></div>
+      <div class="actions"><button id="writeModesBtn">変更した編集モードを送る</button><span id="modesDirty" class="dirty"></span></div>
+    </section>
+
+    <section class="card commit-card">
+      <h2>保存 / 反映</h2>
+      <p class="note">「端末へ送る」はRAMステージングのみ。<strong>COMMIT</strong>でフラッシュ保存し、<strong>再起動</strong>で反映。</p>
+      <div class="actions">
+        <button id="commitBtn" class="primary">COMMIT（フラッシュ保存）</button>
+        <button id="rebootBtn">再起動（反映）</button>
+        <button id="resetBtn" class="danger">RESET（既定へ戻す）</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      VID/PID 0xc0de:0xcafe / vendor HID usagePage 0xFF00 / proto v2。設定は <em>USBに挿した（マスタ）半身</em>
+      のフラッシュに保存されます。フェーズ2ファーム初回書込みで旧(v1)設定は一度リセットされます。
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

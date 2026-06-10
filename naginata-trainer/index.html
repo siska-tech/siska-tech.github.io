@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>薙刀式トレーナー — 分割キーボード練習</title>
+  <meta name="description" content="薙刀式v15（同時打鍵かな入力）の練習トレーナー。物理キー位置で判定、実機(IME)モードあり、ブラウザだけで動作。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>薙刀式トレーナー <span class="sub">v15 同時打鍵かな入力</span></h1>
+
+  <div class="tabs">
+    <button class="tab" data-mode="drill">暗記ドリル</button>
+    <button class="tab" data-mode="text">連続入力</button>
+    <button class="tab" data-mode="chord">同時打鍵</button>
+    <button class="tab" data-mode="weak">苦手重点</button>
+  </div>
+
+  <div class="stage">
+    <div id="promptLine" class="prompt-line"></div>
+    <div id="hint" class="hint"></div>
+    <div id="typeWrap" style="display:none; margin-top:14px;">
+      <p class="typecap">↓ 実機／キーボードからの入力を受け取る欄（この欄にフォーカスが必要・判定はキー図側で表示）</p>
+      <input id="typeInput" type="text" autocomplete="off" autocapitalize="off"
+        spellcheck="false" placeholder="入力欄">
+    </div>
+  </div>
+
+  <div class="kbd" id="kbd"></div>
+  <p id="kbdNote" class="kbdnote"></p>
+
+  <div class="stats">
+    <div class="stat"><div class="label">正解</div><div id="stCorrect" class="value ok">0</div></div>
+    <div class="stat"><div class="label">ミス</div><div id="stMiss" class="value">0</div></div>
+    <div class="stat"><div class="label">正答率</div><div id="stAcc" class="value">100%</div></div>
+    <div class="stat"><div class="label">速度(かな/分)</div><div id="stKpm" class="value">0</div></div>
+  </div>
+
+  <div class="controls">
+    <label>判定:
+      <select id="judge">
+        <option value="position">位置判定（物理キー・同時打鍵）</option>
+        <option value="romaji">実機（IMEオフ）</option>
+        <option value="ime">実機（IME経由のかな）</option>
+      </select>
+    </label>
+    <span id="lessonWrap" style="display:none; align-items:center; gap:6px;">
+      <label>例文:
+        <select id="lesson"></select>
+      </label>
+    </span>
+    <label><input type="checkbox" id="sound" checked> 効果音</label>
+    <label><input type="checkbox" id="showhint" checked> ヒント表示</label>
+    <span id="windowWrap">
+      <label>判定窓 <input type="range" id="window" min="20" max="150" step="5" value="50"><span id="windowVal">50ms</span></label>
+    </span>
+    <button id="skip">次のお題 ↻</button>
+  </div>
+
+  <div class="controls" style="margin-top:10px;">
+    <label class="filebtn">例文を読込<input id="lessonFile" type="file" accept=".txt,.md,.json" hidden></label>
+    <label class="filebtn">配列を読込<input id="keymapFile" type="file" accept=".json" hidden></label>
+    <button id="resetStats">苦手データ消去</button>
+  </div>
+
+  <footer>
+    <p>
+      <span class="chip base">緑</span> ベースキー ／ <span class="chip shift">橙</span> シフトキー（同時押し）。
+      複数キーは <b>判定窓</b> 内に一緒に押す（薙刀式の同時打鍵を再現）。
+    </p>
+    <p>
+      <b>位置判定</b>: 物理キー位置（QWERTY配列の位置）で同時打鍵を判定。OSのIME・キー配列設定に依存しません。
+      <b>実機（IMEオフ）</b>: 実機がローマ字をHID出力→ホストIMEをオフにし、ローマ字をそのまま入力（訓令式・ヘボン式どちらも可）。
+      <b>実機（IME経由）</b>: 実機がローマ字をHID出力→ホストIMEがかな変換した結果を読み取り（IME ON・<b>変換せず</b>打鍵）。
+    </p>
+    <p>
+      <b>例文を読込</b>: <code>.txt</code>/<code>.md</code>（<code>#</code>見出し＝レッスン名・各行＝例文）または
+      <code>.json</code>（<code>[{"title","items"}]</code>）。
+      <b>配列を読込</b>: <code>naginata.yaml</code> 相当を JSON 化したキーマップ。
+    </p>
+    <p>
+      苦手重点モードは誤打・反応速度を記録して出題頻度を自動調整します（データはこのブラウザ内にのみ保存）。
+    </p>
+  </footer>
+
+  <script src="sfx.js"></script>
+  <script src="layout.js"></script>
+  <script src="romaji.js"></script>
+  <script src="lessons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
