@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8"><title>probe</title></head>
+<body>
+<pre id="out"></pre>
+<script src="../js/data.js"></script>
+<script src="../js/romaji.js"></script>
+<script src="../js/emulator.js"></script>
+<script>
+  const out = [];
+  try {
+    const s = 'でんしゃにのって、かいしゃへいきます。';
+    const units = tokenize(s);
+    out.push('UNITS: ' + units.map((u) => `${u.text}=${u.alts[0]}`).join(' '));
+    out.push('FIRMWARE: ' + units.map((u) => u.alts[0]).join(''));
+    const m = new Matcher(tokenize(s));
+    let result = 'PASS';
+    for (const ch of 'dennsyaninotte,kaisyaheikimasu.') {
+      if (m.input(ch) === 'miss') { result = `MISS at ${ch} idx=${m.idx} buf=${m.buf}`; break; }
+    }
+    if (result === 'PASS' && !m.done) result = 'INCOMPLETE';
+    out.push('DENNSYA: ' + result);
+
+    // エミュレーションエンジン(ブラウザのグローバル参照パス)
+    const emitted = [];
+    const eng = new NaginataEngine({ windowMs: 60, onEmit: (k) => emitted.push(k) });
+    eng.keydown('j', 0); eng.keydown('w', 100); eng.keydown('h', 120);
+    eng.keyup('w', 180); eng.keyup('h', 190); eng.keyup('j', 300);
+    eng.keydown('SP', 400); eng.keydown('u', 700); eng.keyup('u', 750); eng.keyup('SP', 800);
+    eng.keydown('f', 900); eng.keyup('f', 980);
+    out.push('EMU: ' + (emitted.join('|') === 'ぎゃ|さ|か' ? 'PASS' : 'FAIL got ' + emitted.join('|')));
+  } catch (err) {
+    out.push('ERROR: ' + err.message);
+  }
+  document.getElementById('out').textContent = out.join('\n');
+</script>
+</body>
+</html>

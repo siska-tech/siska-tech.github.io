@@ -3,91 +3,154 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>薙刀式トレーナー — 分割キーボード練習</title>
-  <meta name="description" content="薙刀式v15（同時打鍵かな入力）の練習トレーナー。物理キー位置で判定、実機(IME)モードあり、ブラウザだけで動作。">
-  <link rel="stylesheet" href="style.css">
+  <title>薙刀式タイピング練習 - DividedKanaKeyboard 対応</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>薙刀式トレーナー <span class="sub">v15 同時打鍵かな入力</span></h1>
+  <canvas id="fx-canvas"></canvas>
+  <header>
+    <button id="btn-sound" class="btn sound-btn" title="効果音">🔊</button>
+    <h1>薙刀式タイピング練習</h1>
+    <p class="subtitle">DividedKanaKeyboard(実機ローマ字送出)対応トレーナー</p>
+  </header>
 
-  <div class="tabs">
-    <button class="tab" data-mode="drill">暗記ドリル</button>
-    <button class="tab" data-mode="text">連続入力</button>
-    <button class="tab" data-mode="chord">同時打鍵</button>
-    <button class="tab" data-mode="weak">苦手重点</button>
+  <div id="ime-warning">
+    <span>⚠ IME がオンになっています。半角英数モードにしてください(実機では <kbd>f+g</kbd> で IME OFF)。</span>
+    <button class="close">×</button>
   </div>
 
-  <div class="stage">
-    <div id="promptLine" class="prompt-line"></div>
-    <div id="hint" class="hint"></div>
-    <div id="typeWrap" style="display:none; margin-top:14px;">
-      <p class="typecap">↓ 実機／キーボードからの入力を受け取る欄（この欄にフォーカスが必要・判定はキー図側で表示）</p>
-      <input id="typeInput" type="text" autocomplete="off" autocapitalize="off"
-        spellcheck="false" placeholder="入力欄">
+  <!-- メニュー画面 -->
+  <main id="view-menu" class="view">
+    <div class="level-bar">
+      <span id="menu-level" class="level-badge">Lv.1</span>
+      <div class="xp-track"><div id="menu-xp-fill" class="xp-fill"></div></div>
+      <span id="menu-xp-text" class="xp-text"></span>
     </div>
-  </div>
-
-  <div class="kbd" id="kbd"></div>
-  <p id="kbdNote" class="kbdnote"></p>
-
-  <div class="stats">
-    <div class="stat"><div class="label">正解</div><div id="stCorrect" class="value ok">0</div></div>
-    <div class="stat"><div class="label">ミス</div><div id="stMiss" class="value">0</div></div>
-    <div class="stat"><div class="label">正答率</div><div id="stAcc" class="value">100%</div></div>
-    <div class="stat"><div class="label">速度(かな/分)</div><div id="stKpm" class="value">0</div></div>
-  </div>
-
-  <div class="controls">
-    <label>判定:
-      <select id="judge">
-        <option value="position">位置判定（物理キー・同時打鍵）</option>
-        <option value="romaji">実機（IMEオフ）</option>
-        <option value="ime">実機（IME経由のかな）</option>
-      </select>
-    </label>
-    <span id="lessonWrap" style="display:none; align-items:center; gap:6px;">
-      <label>例文:
-        <select id="lesson"></select>
+    <section class="usage">
+      <h2>使い方</h2>
+      <ul>
+        <li>実機(DividedKanaKeyboard)または通常のキーボードで練習できます。<strong>IME はオフ(半角英数)</strong>にしてください。</li>
+        <li>実機はかなをローマ字(訓令式: し=si、ん=nn、促音=子音重ね)で送出します。このアプリはその表記をそのまま判定します。ヘボン式(shi・cha など)の手打ちも受け付けます。</li>
+        <li>画面下のキーボードガイドが、次のかなに必要な<strong>同時押しキー</strong>を示します。</li>
+        <li>ミスなく打ち続けるとコンボでスコア倍率が上がります。レッスンクリアで XP を獲得してレベルアップ!</li>
+        <li><kbd>Esc</kbd> でメニューに戻ります。</li>
+      </ul>
+    </section>
+    <section class="mode">
+      <h2>入力モード</h2>
+      <label class="mode-option">
+        <input type="radio" name="mode" value="romaji">
+        <span><strong>ローマ字入力</strong> - 実機(DividedKanaKeyboard)または通常の手打ちローマ字で判定</span>
       </label>
-    </span>
-    <label><input type="checkbox" id="sound" checked> 効果音</label>
-    <label><input type="checkbox" id="showhint" checked> ヒント表示</label>
-    <span id="windowWrap">
-      <label>判定窓 <input type="range" id="window" min="20" max="150" step="5" value="50"><span id="windowVal">50ms</span></label>
-    </span>
-    <button id="skip">次のお題 ↻</button>
-  </div>
+      <label class="mode-option">
+        <input type="radio" name="mode" value="emu">
+        <span><strong>薙刀式エミュレーション</strong> - 通常のQWERTYキーボードで同時押しを再現(実機がなくても配列練習ができます)</span>
+      </label>
+      <div id="emu-options">
+        同時押し判定窓:
+        <input type="range" id="emu-window" min="30" max="120" step="10">
+        <span id="emu-window-val"></span> ms(実機は40ms。大きいほどゆっくり押しても同時と判定)
+      </div>
+    </section>
+    <h2>レッスン</h2>
+    <div id="lesson-list"></div>
+    <section id="imported-section">
+      <h2>追加したお題</h2>
+      <div id="imported-list"></div>
+    </section>
+    <section class="import">
+      <h2>お題ファイルの追加</h2>
+      <p>
+        <code>.txt</code>(1行1問。<code>#</code> で始まる行はタイトル/コメント)または
+        <code>.json</code>(<code>{"title": "...", "items": ["..."]}</code> かその配列)を読み込みます。
+      </p>
+      <div id="dropzone">
+        ここにファイルをドロップ、または
+        <label class="filebtn">ファイルを選択<input type="file" id="file-input" accept=".txt,.json" multiple hidden></label>
+      </div>
+      <p id="import-msg"></p>
+    </section>
+    <section class="custom">
+      <h2>カスタム練習(その場で入力)</h2>
+      <p>ひらがなのテキストを1行1問で入力してください。</p>
+      <textarea id="custom-text" rows="4" placeholder="れんしゅうしたいぶんしょうをいれてください"></textarea>
+      <button id="custom-start" class="btn primary">カスタム練習を開始</button>
+    </section>
+  </main>
 
-  <div class="controls" style="margin-top:10px;">
-    <label class="filebtn">例文を読込<input id="lessonFile" type="file" accept=".txt,.md,.json" hidden></label>
-    <label class="filebtn">配列を読込<input id="keymapFile" type="file" accept=".json" hidden></label>
-    <button id="resetStats">苦手データ消去</button>
-  </div>
+  <!-- 練習画面 -->
+  <main id="view-practice" class="view">
+    <div class="practice-bar">
+      <button id="btn-back" class="btn">← メニュー (Esc)</button>
+      <span id="practice-title"></span>
+      <span id="practice-mode" class="mode-badge"></span>
+      <span id="practice-progress"></span>
+      <button id="btn-restart" class="btn">やり直す</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="label">時間</span><span id="stat-time">0:00</span></div>
+      <div class="stat"><span class="label">かな/分</span><span id="stat-kpm">-</span></div>
+      <div class="stat"><span class="label">正確率</span><span id="stat-acc">-</span></div>
+      <div class="stat"><span class="label">ミス</span><span id="stat-miss">0</span></div>
+      <div class="stat combo"><span class="label">コンボ</span><span id="stat-combo">0</span></div>
+      <div class="stat score"><span class="label">スコア</span><span id="stat-score">0</span></div>
+    </div>
+    <div id="target-wrap">
+      <div id="target-text"></div>
+      <div id="fx-layer"></div>
+    </div>
+    <div id="romaji-hint"></div>
+    <div id="keyboard"></div>
+    <div class="legend">
+      <span><i class="sw shift-center"></i> センターシフト(押しながら)</span>
+      <span><i class="sw shift-daku"></i> 濁音シフト(f/j)</span>
+      <span><i class="sw shift-handaku"></i> 半濁音シフト(v/m)</span>
+      <span><i class="sw shift-small"></i> 小書きシフト(q)</span>
+      <span><i class="sw hit-sample"></i> 次に押すキー(複数は同時押し)</span>
+    </div>
+  </main>
+
+  <!-- 結果画面 -->
+  <main id="view-result" class="view">
+    <h2>結果</h2>
+    <p id="result-perfect"></p>
+    <div id="result-rank" class="rank">-</div>
+    <div id="result-stars"></div>
+    <div class="result-grid">
+      <div class="stat big"><span class="label">スコア</span><span id="result-score"></span></div>
+      <div class="stat big"><span class="label">かな/分</span><span id="result-kpm"></span></div>
+      <div class="stat big"><span class="label">正確率</span><span id="result-acc"></span></div>
+      <div class="stat big"><span class="label">最大コンボ</span><span id="result-combo"></span></div>
+      <div class="stat big"><span class="label">ミス</span><span id="result-miss"></span></div>
+      <div class="stat big"><span class="label">時間</span><span id="result-time"></span></div>
+    </div>
+    <div class="level-bar result-level">
+      <span id="result-level" class="level-badge">Lv.1</span>
+      <div class="xp-track"><div id="result-xp-fill" class="xp-fill"></div></div>
+      <span id="result-xp-text" class="xp-text"></span>
+      <span id="result-xp-gain" class="xp-gain"></span>
+    </div>
+    <p id="result-levelup"></p>
+    <p id="result-best"></p>
+    <div class="result-actions">
+      <button id="result-retry" class="btn primary">もう一度</button>
+      <button id="result-menu" class="btn">メニューへ</button>
+    </div>
+  </main>
 
   <footer>
-    <p>
-      <span class="chip base">緑</span> ベースキー ／ <span class="chip shift">橙</span> シフトキー（同時押し）。
-      複数キーは <b>判定窓</b> 内に一緒に押す（薙刀式の同時打鍵を再現）。
-    </p>
-    <p>
-      <b>位置判定</b>: 物理キー位置（QWERTY配列の位置）で同時打鍵を判定。OSのIME・キー配列設定に依存しません。
-      <b>実機（IMEオフ）</b>: 実機がローマ字をHID出力→ホストIMEをオフにし、ローマ字をそのまま入力（訓令式・ヘボン式どちらも可）。
-      <b>実機（IME経由）</b>: 実機がローマ字をHID出力→ホストIMEがかな変換した結果を読み取り（IME ON・<b>変換せず</b>打鍵）。
-    </p>
-    <p>
-      <b>例文を読込</b>: <code>.txt</code>/<code>.md</code>（<code>#</code>見出し＝レッスン名・各行＝例文）または
-      <code>.json</code>（<code>[{"title","items"}]</code>）。
-      <b>配列を読込</b>: <code>naginata.yaml</code> 相当を JSON 化したキーマップ。
-    </p>
-    <p>
-      苦手重点モードは誤打・反応速度を記録して出題頻度を自動調整します（データはこのブラウザ内にのみ保存）。
-    </p>
+    <p>配列: 薙刀式 v15fix /
+      <a href="https://github.com/siska-tech/DividedKanaKeyboard" target="_blank" rel="noopener">DividedKanaKeyboard</a>
+      のファームウェア定義に準拠</p>
   </footer>
 
-  <script src="sfx.js"></script>
-  <script src="layout.js"></script>
-  <script src="romaji.js"></script>
-  <script src="lessons.js"></script>
-  <script src="app.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/romaji.js"></script>
+  <script src="js/emulator.js"></script>
+  <script src="js/lessonio.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/keyboard.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
