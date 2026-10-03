@@ -2,6 +2,13 @@
 
 ブラウザ上で動作するPure ONNX OCRのデモアプリケーションです。
 
+- `/pure-onnx-ocr/` … v0.1.0 のデモ（PP-OCRv5）
+- `/pure-onnx-ocr/v0.2.0/` … v0.2.0 のデモ（PP-OCRv6 tiny / small / medium、PP-OCRv5、向き分類）
+  - WASM は `bindings/wasm`（`pure-onnx-ocr-wasm`）を `wasm32-unknown-unknown` + SIMD でビルドし、`wasm-bindgen --target web` と `wasm-opt -O3` で生成
+  - PP-OCRv6 と向き分類モデルは Hugging Face の PaddlePaddle 公式リポジトリからブラウザが直接取得します（本サイトでは再配布しません）
+
+モデル・辞書のライセンス表記は [NOTICE.md](NOTICE.md) と [LICENSE-PaddleOCR.txt](LICENSE-PaddleOCR.txt) を参照してください。
+
 ## セットアップ
 
 ### 1. WASMモジュールのビルド

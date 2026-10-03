@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure ONNX OCR v0.2.0 Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #343a40;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 1.05em; }
+
+        .version-nav {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .version-nav a, .version-nav span {
+            padding: 4px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            color: white;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .version-nav span { background: white; color: #764ba2; font-weight: 700; }
+        .version-nav a:hover { background: rgba(255, 255, 255, 0.15); }
+
+        .content { padding: 32px; }
+
+        section.panel {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        section.panel h3 { margin-bottom: 15px; color: #495057; }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .option-group { display: flex; flex-direction: column; }
+
+        .option-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        .option-group select, .option-group input[type="number"] {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 1em;
+            background: white;
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .hint { color: #6c757d; font-size: 0.85em; margin-top: 6px; line-height: 1.5; }
+
+        .upload-section {
+            margin-bottom: 24px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover, .upload-section.dragover { border-color: #667eea; background: #f0f4ff; }
+
+        .file-input-label {
+            display: inline-block;
+            margin: 16px 0 8px;
+            padding: 14px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover { background: #5568d3; transform: translateY(-2px); }
+        #fileInput { display: none; }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        button {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #5568d3; transform: translateY(-2px); }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) { background: #5a6268; }
+        .btn-small { padding: 8px 16px; font-size: 0.9em; }
+
+        .status {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #bee5eb;
+            background: #d1ecf1;
+            color: #0c5460;
+            font-size: 0.95em;
+        }
+
+        .status.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .status.success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+
+        .progress-bar-container {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.2s ease;
+        }
+
+        .result-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 800px) {
+            .result-layout { grid-template-columns: 1fr; }
+            .content { padding: 16px; }
+        }
+
+        #canvas {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+
+        .result-actions { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+
+        #resultList {
+            list-style: none;
+            max-height: 520px;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        #resultList li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            cursor: default;
+        }
+
+        #resultList li:hover, #resultList li.active { background: #e8edff; }
+        #resultList .text { word-break: break-all; }
+        #resultList .conf { color: #6c757d; font-size: 0.85em; font-family: ui-monospace, monospace; white-space: nowrap; }
+
+        .hidden { display: none !important; }
+
+        footer.license {
+            padding: 20px 32px 28px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 0.85em;
+            line-height: 1.7;
+        }
+
+        footer.license h4 { color: #495057; margin-bottom: 6px; }
+        footer.license a { color: #5568d3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Pure ONNX OCR WASM Demo</h1>
+            <p>PaddleOCR PP-OCRv6 / PP-OCRv5 モデルをブラウザだけで実行（画像はサーバーへ送信されません）</p>
+            <nav class="version-nav" aria-label="バージョン">
+                <span>v0.2.0</span>
+                <a href="../">v0.1.0</a>
+                <a href="https://github.com/siska-tech/pure-onnx-ocr" target="_blank" rel="noopener">GitHub</a>
+            </nav>
+        </div>
+
+        <div class="content">
+            <section class="panel">
+                <h3>モデル</h3>
+                <div class="options-grid">
+                    <div class="option-group">
+                        <label for="tier">検出・認識モデル</label>
+                        <select id="tier">
+                            <option value="v6-tiny">PP-OCRv6 tiny（最速）</option>
+                            <option value="v6-small" selected>PP-OCRv6 small（推奨）</option>
+                            <option value="v6-medium">PP-OCRv6 medium（高精度・低速）</option>
+                            <option value="v5">PP-OCRv5（本サイトに配置）</option>
+                        </select>
+                        <p class="hint">PP-OCRv6 は Hugging Face（PaddlePaddle 公式）から初回のみダウンロードし、ブラウザにキャッシュします。</p>
+                    </div>
+                    <div class="option-group">
+                        <label>向きの補正（任意）</label>
+                        <label class="checkbox"><input type="checkbox" id="textline"> 行の向き（0° / 180°）</label>
+                        <label class="checkbox"><input type="checkbox" id="doc"> 文書の向き（0° / 90° / 180° / 270°）</label>
+                    </div>
+                    <div class="option-group">
+                        <label for="detLimitSideLen">検出最大辺長</label>
+                        <input type="number" id="detLimitSideLen" min="320" max="4096" step="32" value="960" />
+                        <p class="hint">大きくすると小さな文字を拾いやすくなりますが、処理が遅くなります。</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="upload-section" id="uploadSection">
+                <h2>画像を選択</h2>
+                <label for="fileInput" class="file-input-label">画像を選択</label>
+                <input type="file" id="fileInput" accept="image/*" />
+                <div class="hint" id="fileInfo">または画像をここにドラッグ＆ドロップ / クリップボードから貼り付け</div>
+            </div>
+
+            <div class="button-group">
+                <button id="ocrBtn" class="btn-primary" disabled>OCR実行</button>
+                <button id="clearBtn" class="btn-secondary">クリア</button>
+            </div>
+
+            <div class="status" id="status">
+                <div id="statusText">画像を選択してください。</div>
+                <div class="progress-bar-container hidden" id="progressContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+
+            <div class="result-layout hidden" id="resultSection">
+                <div><canvas id="canvas"></canvas></div>
+                <div>
+                    <div class="result-actions">
+                        <button id="copyBtn" class="btn-primary btn-small">テキストをコピー</button>
+                        <button id="downloadTxtBtn" class="btn-primary btn-small">TXT保存</button>
+                        <button id="downloadJsonBtn" class="btn-primary btn-small">JSON保存</button>
+                    </div>
+                    <ol id="resultList"></ol>
+                </div>
+            </div>
+        </div>
+
+        <footer class="license">
+            <h4>ライセンス・クレジット</h4>
+            <p>
+                このデモは <a href="https://github.com/siska-tech/pure-onnx-ocr" target="_blank" rel="noopener">pure-onnx-ocr</a>
+                v0.2.0（Apache License 2.0）を WebAssembly にビルドしたものです。
+            </p>
+            <p>
+                OCR モデル（PP-OCRv6 / PP-OCRv5 の検出・認識モデル、PP-LCNet 向き分類モデル）および認識辞書は
+                <a href="https://github.com/PaddlePaddle/PaddleOCR" target="_blank" rel="noopener">PaddleOCR</a>
+                （Copyright (c) 2016 PaddlePaddle Authors）によるもので、
+                <a href="../LICENSE-PaddleOCR.txt" target="_blank">Apache License 2.0</a> の下で提供されています。
+                PP-OCRv6 と向き分類モデルは <a href="https://huggingface.co/PaddlePaddle" target="_blank" rel="noopener">Hugging Face 上の PaddlePaddle 公式リポジトリ</a>
+                から直接読み込み、PP-OCRv5 モデルは本サイトに配置したもの（改変なし）を使用しています。
+                詳細は <a href="../NOTICE.md" target="_blank">NOTICE</a> を参照してください。
+            </p>
+            <p>本デモは PaddlePaddle / Baidu による公式のものではありません。</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        const $ = (id) => document.getElementById(id);
+        const HF = "https://huggingface.co/PaddlePaddle";
+        const hfModel = (repo, label) => ({
+            onnx: `${HF}/${repo}/resolve/main/inference.onnx`,
+            yml: `${HF}/${repo}/resolve/main/inference.yml`,
+            label,
+        });
+        const siteUrl = (path) => new URL(path, location.href).href;
+
+        function modelConfig() {
+            const tier = $("tier").value;
+            const config = tier === "v5"
+                ? {
+                    det: { onnx: siteUrl("../ppocrv5/det.onnx"), yml: null, label: "PP-OCRv5 検出" },
+                    rec: { onnx: siteUrl("../ppocrv5/rec.onnx"), yml: null, label: "PP-OCRv5 認識" },
+                    dictionary: siteUrl("../ppocrv5/ppocrv5_dict.txt"),
+                }
+                : (() => {
+                    const size = tier.slice(3);
+                    return {
+                        det: hfModel(`PP-OCRv6_${size}_det_onnx`, `PP-OCRv6 ${size} 検出`),
+                        rec: hfModel(`PP-OCRv6_${size}_rec_onnx`, `PP-OCRv6 ${size} 認識`),
+                        dictionary: null,
+                    };
+                })();
+            config.textlineOrientation = $("textline").checked
+                ? hfModel("PP-LCNet_x0_25_textline_ori_onnx", "行の向き分類") : null;
+            config.docOrientation = $("doc").checked
+                ? hfModel("PP-LCNet_x1_0_doc_ori_onnx", "文書の向き分類") : null;
+            config.detLimitSideLen = Math.max(32, Number($("detLimitSideLen").value) || 960);
+            return config;
+        }
+
+        // ---- status ----
+        function setStatus(text, kind = "") {
+            $("statusText").textContent = text;
+            $("status").className = `status ${kind}`;
+        }
+
+        function setProgress(fraction) {
+            if (fraction == null) {
+                $("progressContainer").classList.add("hidden");
+                return;
+            }
+            $("progressContainer").classList.remove("hidden");
+            $("progressBar").style.width = `${Math.round(fraction * 100)}%`;
+        }
+
+        const formatMB = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+        // ---- worker ----
+        let worker = null;
+        let loadedKey = null;
+
+        function request(message, transfer = []) {
+            return new Promise((resolve, reject) => {
+                worker.onmessage = ({ data }) => {
+                    if (data.type === "progress") {
+                        if (data.total) {
+                            setStatus(`${data.label} を読み込み中… ${formatMB(data.loaded)} / ${formatMB(data.total)}`);
+                            setProgress(data.loaded / data.total);
+                        } else {
+                            setStatus(data.loaded ? `${data.label} を読み込み中… ${formatMB(data.loaded)}` : `${data.label}…`);
+                            setProgress(null);
+                        }
+                    } else if (data.type === "error") {
+                        reject(new Error(data.message));
+                    } else {
+                        resolve(data);
+                    }
+                };
+                worker.onerror = (event) => reject(new Error(event.message || "Worker error"));
+                worker.postMessage(message, transfer);
+            });
+        }
+
+        async function ensureEngine() {
+            const config = modelConfig();
+            const key = JSON.stringify(config);
+            if (worker && loadedKey === key) return;
+            worker?.terminate();
+            loadedKey = null;
+            worker = new Worker("./worker.js", { type: "module" });
+            setStatus("WebAssembly を初期化中…");
+            const loaded = await request({ type: "load", ...config });
+            loadedKey = key;
+            setProgress(null);
+            setStatus(`モデルを読み込みました（${(loaded.ms / 1000).toFixed(1)} 秒）。`);
+        }
+
+        // ---- image ----
+        let imageBuffer = null;
+        let imageBitmap = null;
+        let lastResults = [];
+        let activeIndex = -1;
+        let busy = false;
+
+        async function setImage(file) {
+            if (!file || !file.type.startsWith("image/")) {
+                setStatus("画像ファイルを選択してください。", "error");
+                return;
+            }
+            imageBuffer = await file.arrayBuffer();
+            imageBitmap = await createImageBitmap(file);
+            lastResults = [];
+            $("fileInfo").textContent = `${file.name || "貼り付け画像"}（${imageBitmap.width}×${imageBitmap.height}, ${(file.size / 1024).toFixed(0)} KB）`;
+            $("resultList").replaceChildren();
+            $("resultSection").classList.remove("hidden");
+            draw();
+            $("ocrBtn").disabled = busy;
+            setStatus("「OCR実行」を押してください。");
+        }
+
+        function draw() {
+            const canvas = $("canvas");
+            if (!imageBitmap) return;
+            canvas.width = imageBitmap.width;
+            canvas.height = imageBitmap.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(imageBitmap, 0, 0);
+            const lineWidth = Math.max(2, imageBitmap.width / 400);
+            lastResults.forEach((result, i) => {
+                if (result.box.length !== 4) return;
+                ctx.beginPath();
+                result.box.forEach(([x, y], j) => (j ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+                ctx.closePath();
+                if (i === activeIndex) {
+                    ctx.fillStyle = "rgba(102, 126, 234, 0.3)";
+                    ctx.fill();
+                }
+                ctx.lineWidth = i === activeIndex ? lineWidth * 2 : lineWidth;
+                ctx.strokeStyle = i === activeIndex ? "#667eea" : "#e5007d";
+                ctx.stroke();
+            });
+        }
+
+        function showResults(results) {
+            lastResults = results;
+            activeIndex = -1;
+            $("resultList").replaceChildren(...results.map((r, i) => {
+                const li = document.createElement("li");
+                const text = document.createElement("span");
+                text.className = "text";
+                text.textContent = r.text;
+                const conf = document.createElement("span");
+                conf.className = "conf";
+                conf.textContent = r.confidence.toFixed(3);
+                li.append(text, conf);
+                li.addEventListener("mouseenter", () => { activeIndex = i; draw(); });
+                li.addEventListener("mouseleave", () => { activeIndex = -1; draw(); });
+                return li;
+            }));
+            draw();
+        }
+
+        async function runOcr() {
+            if (!imageBuffer || busy) return;
+            busy = true;
+            $("ocrBtn").disabled = true;
+            try {
+                await ensureEngine();
+                setStatus("OCR を実行中…（初回は推論プランのコンパイルを含むため時間がかかります）");
+                const output = await request({ type: "run", image: imageBuffer.slice(0) });
+                showResults(output.results);
+                const t = output.timings;
+                setStatus(
+                    `${output.results.length} 件を検出（合計 ${(t.total / 1000).toFixed(2)} 秒: ` +
+                    `検出 ${(t.detection / 1000).toFixed(2)} 秒 / 認識 ${(t.recognition / 1000).toFixed(2)} 秒` +
+                    (t.orientation ? ` / 向き ${(t.orientation / 1000).toFixed(2)} 秒` : "") + "）" +
+                    (output.docOrientationAngle ? `。文書を ${output.docOrientationAngle}° 回転として処理しました。` : ""),
+                    "success"
+                );
+                window.ocrOutput = output;
+            } catch (error) {
+                worker?.terminate();
+                worker = null;
+                loadedKey = null;
+                setProgress(null);
+                setStatus(`エラー: ${error.message}`, "error");
+            } finally {
+                busy = false;
+                $("ocrBtn").disabled = !imageBuffer;
+            }
+        }
+
+        function download(name, content, type) {
+            const url = URL.createObjectURL(new Blob([content], { type }));
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = name;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        const resultText = () => lastResults.map((r) => r.text).join("\n");
+
+        // ---- events ----
+        $("fileInput").addEventListener("change", (e) => setImage(e.target.files[0]));
+        const uploadSection = $("uploadSection");
+        uploadSection.addEventListener("dragover", (e) => { e.preventDefault(); uploadSection.classList.add("dragover"); });
+        uploadSection.addEventListener("dragleave", () => uploadSection.classList.remove("dragover"));
+        uploadSection.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove("dragover");
+            setImage(e.dataTransfer.files[0]);
+        });
+        document.addEventListener("paste", (e) => {
+            const item = [...e.clipboardData.items].find((i) => i.type.startsWith("image/"));
+            if (item) setImage(item.getAsFile());
+        });
+        $("ocrBtn").addEventListener("click", runOcr);
+        $("clearBtn").addEventListener("click", () => {
+            imageBuffer = null;
+            imageBitmap = null;
+            lastResults = [];
+            $("fileInput").value = "";
+            $("fileInfo").textContent = "または画像をここにドラッグ＆ドロップ / クリップボードから貼り付け";
+            $("resultSection").classList.add("hidden");
+            $("ocrBtn").disabled = true;
+            setStatus("画像を選択してください。");
+        });
+        $("copyBtn").addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(resultText());
+                setStatus("テキストをコピーしました。", "success");
+            } catch {
+                setStatus("コピーに失敗しました。", "error");
+            }
+        });
+        $("downloadTxtBtn").addEventListener("click", () => download("ocr_result.txt", resultText(), "text/plain"));
+        $("downloadJsonBtn").addEventListener("click", () =>
+            download("ocr_result.json", JSON.stringify(lastResults, null, 2), "application/json"));
+
+        // ?image=URL[&tier=v5&textline=1&doc=1] runs OCR on page load (handy for automated checks).
+        const params = new URLSearchParams(location.search);
+        if (params.get("tier")) $("tier").value = params.get("tier");
+        $("textline").checked = params.get("textline") === "1";
+        $("doc").checked = params.get("doc") === "1";
+        if (params.get("image")) {
+            fetch(params.get("image"))
+                .then((r) => r.blob())
+                .then((blob) => setImage(new File([blob], params.get("image").split("/").pop(), { type: blob.type || "image/png" })))
+                .then(runOcr)
+                .catch((error) => setStatus(`エラー: ${error.message}`, "error"));
+        }
+    </script>
+</body>
+</html>
