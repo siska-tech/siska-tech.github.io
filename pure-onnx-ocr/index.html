@@ -548,6 +548,9 @@
         <div class="header">
             <h1>📸 Pure ONNX OCR WASM Demo</h1>
             <p>画像からテキストを検出・認識</p>
+            <p style="margin-top: 12px; font-size: 0.95em;">
+                v0.1.0 ・ <a href="v0.2.0/" style="color: white; font-weight: 700;">新しい v0.2.0（PP-OCRv6 対応）のデモはこちら →</a>
+            </p>
         </div>
         <div class="content">
             <div class="models-section">
@@ -645,6 +648,22 @@
 
             <div id="statusMessage"></div>
         </div>
+
+        <footer style="padding: 20px 40px 28px; border-top: 1px solid #e9ecef; color: #6c757d; font-size: 0.85em; line-height: 1.7;">
+            <h4 style="color: #495057; margin-bottom: 6px;">ライセンス・クレジット</h4>
+            <p>
+                このデモは <a href="https://github.com/siska-tech/pure-onnx-ocr" target="_blank" rel="noopener">pure-onnx-ocr</a>
+                v0.1.0（Apache License 2.0）を WebAssembly にビルドしたものです。
+            </p>
+            <p>
+                OCR モデル（PP-OCRv5 検出・認識モデル）および認識辞書は
+                <a href="https://github.com/PaddlePaddle/PaddleOCR" target="_blank" rel="noopener">PaddleOCR</a>
+                （Copyright (c) 2016 PaddlePaddle Authors）によるもので、
+                <a href="LICENSE-PaddleOCR.txt" target="_blank">Apache License 2.0</a> の下で提供されています（改変なし）。
+                詳細は <a href="NOTICE.md" target="_blank">NOTICE</a> を参照してください。
+                本デモは PaddlePaddle / Baidu による公式のものではありません。
+            </p>
+        </footer>
     </div>
 
     <!-- Image Modal -->
