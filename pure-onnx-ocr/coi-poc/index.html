@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COI Service Worker PoC</title>
+    <!-- Must be the first script: registers the service worker that adds
+         COOP/COEP headers, then reloads the page once. -->
+    <script src="coi-serviceworker.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+            background: #f4f5fb;
+            color: #343a40;
+            padding: 24px 16px;
+            line-height: 1.6;
+        }
+        main { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 1.6em; margin-bottom: 6px; }
+        .lead { color: #6c757d; margin-bottom: 20px; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+        .card h2 { font-size: 1.1em; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .badge { font-size: 0.75em; padding: 2px 10px; border-radius: 999px; background: #e9ecef; color: #495057; }
+        .badge.ok { background: #d4edda; color: #155724; }
+        .badge.ng { background: #f8d7da; color: #721c24; }
+        .badge.run { background: #d1ecf1; color: #0c5460; }
+        table { border-collapse: collapse; width: 100%; font-size: 0.95em; }
+        td { padding: 4px 8px; border-bottom: 1px solid #f1f3f5; vertical-align: top; }
+        td:first-child { color: #6c757d; width: 40%; }
+        pre { font-family: ui-monospace, monospace; font-size: 0.85em; white-space: pre-wrap; word-break: break-all; color: #495057; }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            margin-right: 8px;
+        }
+        button.secondary { background: #6c757d; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .actions { margin-bottom: 16px; }
+        a { color: #5568d3; }
+        footer { color: #6c757d; font-size: 0.85em; margin-top: 24px; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>GitHub Pages で crossOriginIsolated にする PoC</h1>
+    <p class="lead">
+        <a href="https://github.com/gzuidhof/coi-serviceworker" target="_blank" rel="noopener">coi-serviceworker</a>
+        で COOP / COEP ヘッダを付け、SharedArrayBuffer（WebAssembly のマルチスレッドに必要）が使えるかを確認します。
+        Service Worker のスコープはこのディレクトリ（<code>/pure-onnx-ocr/coi-poc/</code>）だけです。
+    </p>
+
+    <div class="actions">
+        <button id="runAll">すべて再実行</button>
+        <button id="unregister" class="secondary">Service Worker を解除</button>
+    </div>
+
+    <section class="card">
+        <h2>1. 環境 <span class="badge" id="b-env">-</span></h2>
+        <table id="env"></table>
+    </section>
+
+    <section class="card">
+        <h2>2. 共有メモリ（SharedArrayBuffer / shared WebAssembly.Memory）を Worker に渡す <span class="badge" id="b-shared">-</span></h2>
+        <pre id="o-shared"></pre>
+    </section>
+
+    <section class="card">
+        <h2>3. 複数 Worker の並列実行 <span class="badge" id="b-parallel">-</span></h2>
+        <pre id="o-parallel"></pre>
+    </section>
+
+    <section class="card">
+        <h2>4. COEP 下でのクロスオリジン取得（Hugging Face のモデル） <span class="badge" id="b-fetch">-</span></h2>
+        <pre id="o-fetch"></pre>
+    </section>
+
+    <section class="card">
+        <h2>5. 既存の v0.3.0 OCR Worker（シングルスレッド）が動くか <span class="badge" id="b-ocr">-</span></h2>
+        <pre id="o-ocr"></pre>
+    </section>
+
+    <footer>
+        coi-serviceworker v0.1.7 — Copyright (c) 2021 Guido Zuidhof,
+        <a href="LICENSE-coi-serviceworker.txt" target="_blank">MIT License</a>.
+        OCR モデルのライセンスは <a href="../NOTICE.md" target="_blank">NOTICE</a> を参照してください。
+    </footer>
+</main>
+
+<script type="module">
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const results = {};
+    window.coiPoc = results; // read by automated checks
+
+    function badge(name, state, text) {
+        const el = $(`b-${name}`);
+        el.className = `badge ${state}`;
+        el.textContent = text;
+        results[name] = state;
+    }
+
+    // ---- 1. environment ----
+    function checkEnv() {
+        const rows = [
+            ["isSecureContext", String(window.isSecureContext)],
+            ["crossOriginIsolated", String(window.crossOriginIsolated)],
+            ["typeof SharedArrayBuffer", typeof SharedArrayBuffer],
+            ["Service Worker 制御", navigator.serviceWorker?.controller ? navigator.serviceWorker.controller.scriptURL : "なし"],
+            ["COEP モード", (window.chrome || window.netscape) ? "credentialless（Chrome / Firefox）" : "require-corp（Safari など）"],
+            ["navigator.hardwareConcurrency", String(navigator.hardwareConcurrency)],
+            ["User-Agent", navigator.userAgent],
+        ];
+        $("env").replaceChildren(...rows.map(([k, v]) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = "<td></td><td></td>";
+            tr.children[0].textContent = k;
+            tr.children[1].textContent = v;
+            return tr;
+        }));
+        results.crossOriginIsolated = window.crossOriginIsolated;
+        badge("env", window.crossOriginIsolated ? "ok" : "ng",
+            window.crossOriginIsolated ? "crossOriginIsolated = true" : "crossOriginIsolated = false");
+    }
+
+    // ---- 2. shared memory ----
+    async function checkShared() {
+        if (!window.crossOriginIsolated) {
+            $("o-shared").textContent = "crossOriginIsolated ではないためスキップしました。";
+            badge("shared", "ng", "スキップ");
+            return;
+        }
+        const memory = new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true });
+        const view = new Int32Array(memory.buffer);
+        const code = `self.onmessage = ({ data }) => {
+            const v = new Int32Array(data.buffer);
+            for (let i = 0; i < 1000; i++) Atomics.add(v, 0, 1);
+            self.postMessage("done");
+        };`;
+        const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+        const workers = [0, 1, 2, 3].map(() => new Worker(url));
+        await Promise.all(workers.map((w) => new Promise((resolve) => {
+            w.onmessage = resolve;
+            w.postMessage({ buffer: memory.buffer });
+        })));
+        workers.forEach((w) => w.terminate());
+        const ok = Atomics.load(view, 0) === 4000;
+        $("o-shared").textContent =
+            `memory.buffer instanceof SharedArrayBuffer: ${memory.buffer instanceof SharedArrayBuffer}\n` +
+            `4 Worker × 1000 回 Atomics.add → ${Atomics.load(view, 0)}（期待値 4000）`;
+        badge("shared", ok ? "ok" : "ng", ok ? "OK" : "NG");
+    }
+
+    // ---- 3. parallel workers ----
+    async function timeWorkers(count, n, iterations) {
+        const buffer = new SharedArrayBuffer((n + 1) * 8);
+        const values = new Float64Array(buffer);
+        for (let i = 0; i < n; i++) values[i] = i;
+        const workers = Array.from({ length: count }, () => new Worker("thread-worker.js"));
+        // Let the workers start up before timing.
+        await new Promise((r) => setTimeout(r, 100));
+        const started = performance.now();
+        const chunk = Math.ceil(n / count);
+        await Promise.all(workers.map((w, i) => new Promise((resolve) => {
+            w.onmessage = resolve;
+            w.postMessage({ buffer, start: i * chunk, end: Math.min(n, (i + 1) * chunk), iterations });
+        })));
+        const ms = performance.now() - started;
+        workers.forEach((w) => w.terminate());
+        return ms;
+    }
+
+    async function checkParallel() {
+        if (!window.crossOriginIsolated) {
+            $("o-parallel").textContent = "crossOriginIsolated ではないためスキップしました。";
+            badge("parallel", "ng", "スキップ");
+            return;
+        }
+        badge("parallel", "run", "計測中");
+        const threads = Math.min(4, navigator.hardwareConcurrency || 1);
+        const n = 2_000_000, iterations = 40;
+        const one = await timeWorkers(1, n, iterations);
+        const many = await timeWorkers(threads, n, iterations);
+        const speedup = one / many;
+        results.speedup = speedup;
+        $("o-parallel").textContent =
+            `同じ計算量（${n.toLocaleString()} 要素 × ${iterations} 回）を共有メモリ上で処理\n` +
+            `1 Worker: ${one.toFixed(0)} ms\n${threads} Worker: ${many.toFixed(0)} ms\n` +
+            `速度比: ${speedup.toFixed(2)} 倍`;
+        badge("parallel", threads > 1 && speedup > 1.3 ? "ok" : "ng",
+            threads > 1 ? `${speedup.toFixed(2)} 倍` : "CPU が 1 コア");
+    }
+
+    // ---- 4. cross-origin fetch ----
+    async function checkFetch() {
+        const url = params.get("hf") ||
+            "https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_onnx/resolve/main/inference.yml";
+        badge("fetch", "run", "取得中");
+        try {
+            const started = performance.now();
+            const response = await fetch(url);
+            const text = await response.text();
+            const ok = response.ok && text.length > 0;
+            $("o-fetch").textContent =
+                `${url}\nHTTP ${response.status}、${text.length} 文字、${(performance.now() - started).toFixed(0)} ms\n` +
+                text.split("\n").slice(0, 4).join("\n");
+            badge("fetch", ok ? "ok" : "ng", ok ? "OK" : `HTTP ${response.status}`);
+        } catch (error) {
+            $("o-fetch").textContent = `${url}\n取得失敗: ${error.message}`;
+            badge("fetch", "ng", "NG");
+        }
+    }
+
+    // ---- 5. existing OCR worker ----
+    async function checkOcr() {
+        badge("ocr", "run", "実行中");
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 160;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        ctx.font = "36px sans-serif";
+        ctx.fillText("Cross-Origin Isolated", 20, 60);
+        ctx.fillText("こんにちは OCR", 20, 120);
+        const image = await (await new Promise((r) => canvas.toBlob(r, "image/png"))).arrayBuffer();
+
+        const worker = new Worker("ocr-worker.js", { type: "module" });
+        const request = (message, transfer) => new Promise((resolve, reject) => {
+            worker.onmessage = ({ data }) => {
+                if (data.type === "progress") return;
+                data.type === "error" ? reject(new Error(data.message)) : resolve(data);
+            };
+            worker.onerror = (e) => reject(new Error(e.message || "worker error"));
+            worker.postMessage(message, transfer);
+        });
+        try {
+            const site = (p) => new URL(p, location.href).href;
+            await request({
+                type: "load",
+                det: { onnx: site("../ppocrv5/det.onnx"), yml: null, label: "det" },
+                rec: { onnx: site("../ppocrv5/rec.onnx"), yml: null, label: "rec" },
+                dictionary: site("../ppocrv5/ppocrv5_dict.txt"),
+                textlineOrientation: null,
+                docOrientation: null,
+                detLimitSideLen: 960,
+            });
+            const output = await request({ type: "run", image }, [image]);
+            const texts = output.results.map((r) => r.text);
+            results.ocrTexts = texts;
+            $("o-ocr").textContent = `${texts.join("\n")}\n（${output.timings.total.toFixed(0)} ms、PP-OCRv5）`;
+            badge("ocr", texts.length > 0 ? "ok" : "ng", texts.length > 0 ? "OK" : "結果なし");
+        } catch (error) {
+            $("o-ocr").textContent = `失敗: ${error.message}`;
+            badge("ocr", "ng", "NG");
+        } finally {
+            worker.terminate();
+        }
+    }
+
+    async function runAll() {
+        $("runAll").disabled = true;
+        results.done = false;
+        checkEnv();
+        await checkShared();
+        await checkParallel();
+        await checkFetch();
+        await checkOcr();
+        results.done = true;
+        $("runAll").disabled = false;
+    }
+
+    $("runAll").addEventListener("click", runAll);
+    $("unregister").addEventListener("click", async () => {
+        const registrations = await navigator.serviceWorker?.getRegistrations() ?? [];
+        await Promise.all(registrations
+            .filter((r) => r.scope.startsWith(new URL(".", location.href).href))
+            .map((r) => r.unregister()));
+        location.reload();
+    });
+
+    // On the very first visit the service worker reloads the page right after
+    // registering, so only run the checks once the page is controlled (or the
+    // browser cannot use a service worker at all).
+    if (window.crossOriginIsolated || !navigator.serviceWorker || !window.isSecureContext) {
+        runAll();
+    } else {
+        checkEnv();
+        $("o-shared").textContent = "Service Worker の登録後にページが再読み込みされます…";
+        setTimeout(() => { if (!results.done) runAll(); }, 4000);
+    }
+</script>
+</body>
+</html>
