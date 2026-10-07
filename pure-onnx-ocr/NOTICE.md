@@ -4,7 +4,7 @@
 
 ## pure-onnx-ocr
 
-- `pkg/`（v0.1.0）、`v0.2.0/pkg/`（v0.2.0）の WebAssembly モジュールは
+- `pkg/`（v0.1.0）、`v0.2.0/pkg/`（v0.2.0）、`v0.3.0/pkg/`（v0.3.0）の WebAssembly モジュールは
   [pure-onnx-ocr](https://github.com/siska-tech/pure-onnx-ocr) をビルドしたものです。
 - ライセンス: Apache License 2.0
 
@@ -26,7 +26,7 @@
 
 ### 実行時にブラウザが直接読み込むモデル（本サイトでは再配布していません）
 
-v0.2.0 デモは、以下のモデルを Hugging Face 上の PaddlePaddle 公式リポジトリから直接ダウンロードします。
+v0.2.0 / v0.3.0 デモは、以下のモデルを Hugging Face 上の PaddlePaddle 公式リポジトリから直接ダウンロードします。
 
 - [PaddlePaddle/PP-OCRv6_{tiny,small,medium}_det_onnx](https://huggingface.co/PaddlePaddle)
 - [PaddlePaddle/PP-OCRv6_{tiny,small,medium}_rec_onnx](https://huggingface.co/PaddlePaddle)
