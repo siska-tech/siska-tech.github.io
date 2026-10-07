@@ -8,6 +8,12 @@
   [pure-onnx-ocr](https://github.com/siska-tech/pure-onnx-ocr) をビルドしたものです。
 - ライセンス: Apache License 2.0
 
+## coi-serviceworker
+
+- `coi-poc/coi-serviceworker.js` は [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) v0.1.7 を改変せずに配置したものです。
+- Copyright (c) 2021 Guido Zuidhof
+- ライセンス: MIT License（全文: [coi-poc/LICENSE-coi-serviceworker.txt](coi-poc/LICENSE-coi-serviceworker.txt)）
+
 ## PaddleOCR（モデル・辞書）
 
 - 提供元: [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)

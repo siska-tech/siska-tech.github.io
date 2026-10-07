@@ -4,6 +4,7 @@
 
 - `/pure-onnx-ocr/` … v0.1.0 のデモ（PP-OCRv5）
 - `/pure-onnx-ocr/v0.3.0/` … v0.3.0 のデモ（最新。画面・機能は v0.2.0 と同じで、エンジンを v0.3.0 に更新）
+- `/pure-onnx-ocr/coi-poc/` … GitHub Pages のまま `crossOriginIsolated` にできるかを確かめる PoC（coi-serviceworker を使用。Service Worker のスコープはこのディレクトリのみ）
 - `/pure-onnx-ocr/v0.2.0/` … v0.2.0 のデモ（PP-OCRv6 tiny / small / medium、PP-OCRv5、向き分類）
   - WASM は `bindings/wasm`（`pure-onnx-ocr-wasm`）を `wasm32-unknown-unknown` + SIMD でビルドし、`wasm-bindgen --target web` と `wasm-opt -O3` で生成
   - PP-OCRv6 と向き分類モデルは Hugging Face の PaddlePaddle 公式リポジトリからブラウザが直接取得します（本サイトでは再配布しません）
