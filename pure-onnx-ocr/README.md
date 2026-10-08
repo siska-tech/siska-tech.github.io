@@ -3,7 +3,11 @@
 ブラウザ上で動作するPure ONNX OCRのデモアプリケーションです。
 
 - `/pure-onnx-ocr/` … v0.1.0 のデモ（PP-OCRv5）
-- `/pure-onnx-ocr/v0.3.0/` … v0.3.0 のデモ（最新。画面・機能は v0.2.0 と同じで、エンジンを v0.3.0 に更新）
+- `/pure-onnx-ocr/v0.3.1/` … v0.3.1 のデモ（最新。画面・機能は v0.2.0 と同じで、エンジンを v0.3.1 に更新。cross-origin isolated なブラウザではマルチスレッドで推論）
+  - `coi-serviceworker.js` で COOP/COEP ヘッダを付け、`crossOriginIsolated` にする（初回の表示で Service Worker を登録して 1 回だけ再読み込みする）。Service Worker のスコープは `v0.3.1/` 以下
+  - `pkg/` はシングルスレッド版、`pkg-threads/` はマルチスレッド版（`scripts/build_wasm.sh [--threads]` でビルドし、`wasm-opt -O3` で最適化）。`worker.js` は isolated なら `pkg-threads/` を、そうでなければ `pkg/` を読み込む
+  - rayon のスレッドは `pkg-threads/snippets/.../workerHelpers.no-bundler.js` を使う入れ子の Worker。COEP ヘッダが付くように、`worker.js` と `pkg-threads/` は Service Worker のスコープ内に置く
+- `/pure-onnx-ocr/v0.3.0/` … v0.3.1 への転送のみ（v0.3.0 のデモは v0.3.1 に置き換えた）
 - `/pure-onnx-ocr/coi-poc/` … GitHub Pages のまま `crossOriginIsolated` にできるかを確かめる PoC（coi-serviceworker を使用。Service Worker のスコープはこのディレクトリのみ）
 - `/pure-onnx-ocr/v0.2.0/` … v0.2.0 のデモ（PP-OCRv6 tiny / small / medium、PP-OCRv5、向き分類）
   - WASM は `bindings/wasm`（`pure-onnx-ocr-wasm`）を `wasm32-unknown-unknown` + SIMD でビルドし、`wasm-bindgen --target web` と `wasm-opt -O3` で生成

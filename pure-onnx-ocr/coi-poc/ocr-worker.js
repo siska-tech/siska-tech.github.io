@@ -2,4 +2,4 @@
 // response only gets the COEP header (required in a cross-origin isolated
 // page) when this directory's service worker serves it. Same-origin modules it
 // imports from elsewhere are fine.
-import "../v0.3.0/worker.js";
+import "../v0.2.0/worker.js";
