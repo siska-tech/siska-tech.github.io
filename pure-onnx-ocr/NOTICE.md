@@ -32,7 +32,7 @@
 
 ### 実行時にブラウザが直接読み込むモデル（本サイトでは再配布していません）
 
-v0.2.0 / v0.3.0 デモは、以下のモデルを Hugging Face 上の PaddlePaddle 公式リポジトリから直接ダウンロードします。
+v0.2.0 / v0.3.1 デモは、以下のモデルを Hugging Face 上の PaddlePaddle 公式リポジトリから直接ダウンロードします。
 
 - [PaddlePaddle/PP-OCRv6_{tiny,small,medium}_det_onnx](https://huggingface.co/PaddlePaddle)
 - [PaddlePaddle/PP-OCRv6_{tiny,small,medium}_rec_onnx](https://huggingface.co/PaddlePaddle)

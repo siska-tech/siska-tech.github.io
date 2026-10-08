@@ -1,6 +1,16 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+ * Single-threaded build: accepts the same call as the threaded build and
+ * resolves immediately, so one Worker script can load either build.
+ */
+export function initThreadPool(_num_threads: number): Promise<any>;
+/**
+ * Whether this build runs inference on multiple threads (`true` only for
+ * the `threads` build).
+ */
+export function threadsSupported(): boolean;
+/**
  * Chroma subsampling format
  */
 export enum ChromaSampling {
@@ -43,6 +53,10 @@ export class OcrEngine {
    * it is not the original detection contour. Coordinates are input pixels.
    */
   run(image: Uint8Array): Array<any>;
+  /**
+   * Number of threads this engine runs inference on.
+   */
+  readonly inferenceThreads: number;
 }
 /**
  * Builder mirroring `pure_onnx_ocr::OcrEngineBuilder` with in-memory inputs.
@@ -63,6 +77,12 @@ export class OcrEngineBuilder {
    * Plain text dictionary (one character per line), e.g. `ppocrv5_dict.txt`.
    */
   dictionaryText(text: string): OcrEngineBuilder;
+  /**
+   * Number of inference threads. Defaults to the size of the pool started
+   * by `initThreadPool` and is capped to it; always 1 in the
+   * single-threaded build. Same as the Rust builder's `inference_threads`.
+   */
+  inferenceThreads(threads: number): OcrEngineBuilder;
   /**
    * Detection size limit (default 960, longest side).
    */
@@ -101,6 +121,7 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_ocrengine_free: (a: number, b: number) => void;
   readonly __wbg_ocrenginebuilder_free: (a: number, b: number) => void;
+  readonly ocrengine_inferenceThreads: (a: number) => number;
   readonly ocrengine_run: (a: number, b: number, c: number) => [number, number, number];
   readonly ocrengine_runWithMetrics: (a: number, b: number, c: number) => [number, number, number];
   readonly ocrenginebuilder_build: (a: number) => [number, number, number];
@@ -110,10 +131,13 @@ export interface InitOutput {
   readonly ocrenginebuilder_detModel: (a: number, b: number, c: number, d: number, e: number) => number;
   readonly ocrenginebuilder_dictionaryText: (a: number, b: number, c: number) => number;
   readonly ocrenginebuilder_docOrientationModel: (a: number, b: number, c: number, d: number, e: number) => number;
+  readonly ocrenginebuilder_inferenceThreads: (a: number, b: number) => number;
   readonly ocrenginebuilder_new: () => number;
   readonly ocrenginebuilder_recBatchSize: (a: number, b: number) => number;
   readonly ocrenginebuilder_recModel: (a: number, b: number, c: number, d: number, e: number) => number;
   readonly ocrenginebuilder_textlineOrientationModel: (a: number, b: number, c: number, d: number, e: number) => number;
+  readonly threadsSupported: () => number;
+  readonly initThreadPool: (a: number) => any;
   readonly __wbindgen_exn_store_command_export: (a: number) => void;
   readonly __externref_table_alloc_command_export: () => number;
   readonly __wbindgen_externrefs: WebAssembly.Table;

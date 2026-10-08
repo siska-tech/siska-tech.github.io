@@ -1,9 +1,33 @@
-// Runs pure-onnx-ocr v0.2.0 in a Web Worker so the page stays responsive while
+// Runs pure-onnx-ocr v0.3.1 in a Web Worker so the page stays responsive while
 // the (synchronous) WebAssembly inference runs.
-import init, { OcrEngineBuilder } from "./pkg/pure_onnx_ocr_wasm.js";
+//
+// When the page is cross-origin isolated (coi-serviceworker.js adds the
+// COOP/COEP headers), the multi-threaded build in ./pkg-threads is used: its
+// rayon threads are nested Workers started from this Worker. Otherwise, or if
+// it fails to start, the single-threaded build in ./pkg is used.
 
 const CACHE_NAME = "pure-onnx-ocr-models-v1";
 let engine = null;
+let wasm = null;
+
+// `threads`: 0 = all logical CPUs, 1 = single-threaded build, n = n threads.
+async function loadWasm(threads) {
+  if (threads !== 1 && self.crossOriginIsolated) {
+    try {
+      const module = await import("./pkg-threads/pure_onnx_ocr_wasm.js");
+      await module.default();
+      const poolSize = threads || Math.min(navigator.hardwareConcurrency || 4, 8);
+      progress(`スレッドプールを起動中（${poolSize} スレッド）`, 0, 0);
+      await module.initThreadPool(poolSize);
+      return { module, build: "threads" };
+    } catch (error) {
+      console.warn("multi-threaded build unavailable, using the single-threaded one:", error);
+    }
+  }
+  const module = await import("./pkg/pure_onnx_ocr_wasm.js");
+  await module.default();
+  return { module, build: "single" };
+}
 
 function progress(label, loaded, total) {
   self.postMessage({ type: "progress", label, loaded, total });
@@ -77,10 +101,12 @@ self.onmessage = async ({ data }) => {
   try {
     if (data.type === "load") {
       const started = performance.now();
-      await init();
+      // The thread pool can only be started once per Worker; the page starts
+      // a new Worker when the thread count changes.
+      wasm ??= await loadWasm(data.threads ?? 0);
       engine?.free();
       engine = null;
-      let builder = new OcrEngineBuilder()
+      let builder = new wasm.module.OcrEngineBuilder()
         .detModel(...(await loadModel(data.det)))
         .recModel(...(await loadModel(data.rec)));
       if (data.dictionary) {
@@ -95,7 +121,13 @@ self.onmessage = async ({ data }) => {
       builder = builder.detLimitSideLen(data.detLimitSideLen);
       progress("エンジンを構築中", 0, 0);
       engine = builder.build();
-      self.postMessage({ type: "loaded", ms: performance.now() - started });
+      self.postMessage({
+        type: "loaded",
+        ms: performance.now() - started,
+        build: wasm.build,
+        threads: engine.inferenceThreads,
+        crossOriginIsolated: self.crossOriginIsolated,
+      });
     } else if (data.type === "run") {
       const output = engine.runWithMetrics(new Uint8Array(data.image));
       self.postMessage({

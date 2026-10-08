@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pure ONNX OCR v0.2.0 Demo</title>
+    <title>Pure ONNX OCR v0.3.1 Demo</title>
+    <!-- Adds the COOP/COEP headers (GitHub Pages cannot set them) so that the
+         page is cross-origin isolated and the multi-threaded build can run.
+         On the first visit it registers a Service Worker and reloads once. -->
+    <script src="coi-serviceworker.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -241,8 +245,8 @@
             <h1>📸 Pure ONNX OCR WASM Demo</h1>
             <p>PaddleOCR PP-OCRv6 / PP-OCRv5 モデルをブラウザだけで実行（画像はサーバーへ送信されません）</p>
             <nav class="version-nav" aria-label="バージョン">
-                <a href="../v0.3.1/">v0.3.1（最新）</a>
-                <span>v0.2.0</span>
+                <span>v0.3.1</span>
+                <a href="../v0.2.0/">v0.2.0</a>
                 <a href="../">v0.1.0</a>
                 <a href="https://github.com/siska-tech/pure-onnx-ocr" target="_blank" rel="noopener">GitHub</a>
             </nav>
@@ -266,6 +270,17 @@
                         <label>向きの補正（任意）</label>
                         <label class="checkbox"><input type="checkbox" id="textline"> 行の向き（0° / 180°）</label>
                         <label class="checkbox"><input type="checkbox" id="doc"> 文書の向き（0° / 90° / 180° / 270°）</label>
+                    </div>
+                    <div class="option-group">
+                        <label for="threads">推論スレッド数</label>
+                        <select id="threads">
+                            <option value="0" selected>自動（CPU 数、最大 8）</option>
+                            <option value="1">1（シングルスレッド版）</option>
+                            <option value="2">2</option>
+                            <option value="4">4</option>
+                            <option value="8">8</option>
+                        </select>
+                        <p class="hint" id="threadsHint">マルチスレッドには cross-origin isolation が必要です。</p>
                     </div>
                     <div class="option-group">
                         <label for="detLimitSideLen">検出最大辺長</label>
@@ -311,7 +326,10 @@
             <h4>ライセンス・クレジット</h4>
             <p>
                 このデモは <a href="https://github.com/siska-tech/pure-onnx-ocr" target="_blank" rel="noopener">pure-onnx-ocr</a>
-                v0.2.0（Apache License 2.0）を WebAssembly にビルドしたものです。
+                v0.3.1（Apache License 2.0）を WebAssembly にビルドしたものです。
+                マルチスレッド版は <a href="https://github.com/RReverser/wasm-bindgen-rayon" target="_blank" rel="noopener">wasm-bindgen-rayon</a>（Apache License 2.0）を含み、
+                cross-origin isolation に <a href="https://github.com/gzuidhof/coi-serviceworker" target="_blank" rel="noopener">coi-serviceworker</a>
+                v0.1.7（Copyright (c) 2021 Guido Zuidhof, <a href="LICENSE-coi-serviceworker.txt" target="_blank">MIT License</a>）を使用しています。
             </p>
             <p>
                 OCR モデル（PP-OCRv6 / PP-OCRv5 の検出・認識モデル、PP-LCNet 向き分類モデル）および認識辞書は
@@ -357,6 +375,7 @@
             config.docOrientation = $("doc").checked
                 ? hfModel("PP-LCNet_x1_0_doc_ori_onnx", "文書の向き分類") : null;
             config.detLimitSideLen = Math.max(32, Number($("detLimitSideLen").value) || 960);
+            config.threads = Number($("threads").value);
             return config;
         }
 
@@ -380,6 +399,7 @@
         // ---- worker ----
         let worker = null;
         let loadedKey = null;
+        let engineInfo = "";
 
         function request(message, transfer = []) {
             return new Promise((resolve, reject) => {
@@ -414,7 +434,10 @@
             const loaded = await request({ type: "load", ...config });
             loadedKey = key;
             setProgress(null);
-            setStatus(`モデルを読み込みました（${(loaded.ms / 1000).toFixed(1)} 秒）。`);
+            engineInfo = loaded.build === "threads"
+                ? `${loaded.threads} スレッド`
+                : loaded.crossOriginIsolated ? "シングルスレッド" : "シングルスレッド（cross-origin isolated でないため）";
+            setStatus(`モデルを読み込みました（${(loaded.ms / 1000).toFixed(1)} 秒、${engineInfo}）。`);
         }
 
         // ---- image ----
@@ -495,7 +518,7 @@
                 setStatus(
                     `${output.results.length} 件を検出（合計 ${(t.total / 1000).toFixed(2)} 秒: ` +
                     `検出 ${(t.detection / 1000).toFixed(2)} 秒 / 認識 ${(t.recognition / 1000).toFixed(2)} 秒` +
-                    (t.orientation ? ` / 向き ${(t.orientation / 1000).toFixed(2)} 秒` : "") + "）" +
+                    (t.orientation ? ` / 向き ${(t.orientation / 1000).toFixed(2)} 秒` : "") + `、${engineInfo}）` +
                     (output.docOrientationAngle ? `。文書を ${output.docOrientationAngle}° 回転として処理しました。` : ""),
                     "success"
                 );
@@ -563,6 +586,10 @@
         // ?image=URL[&tier=v5&textline=1&doc=1] runs OCR on page load (handy for automated checks).
         const params = new URLSearchParams(location.search);
         if (params.get("tier")) $("tier").value = params.get("tier");
+        if (params.get("threads")) $("threads").value = params.get("threads");
+        $("threadsHint").textContent = crossOriginIsolated
+            ? `cross-origin isolated: マルチスレッド版を使います（CPU 数 ${navigator.hardwareConcurrency || "不明"}）。`
+            : "このページは cross-origin isolated でないため、シングルスレッド版で動きます。";
         $("textline").checked = params.get("textline") === "1";
         $("doc").checked = params.get("doc") === "1";
         if (params.get("image")) {
