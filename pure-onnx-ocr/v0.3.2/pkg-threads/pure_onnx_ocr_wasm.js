@@ -644,7 +644,7 @@ function __wbg_get_imports(memory) {
         table.set(offset + 3, false);
         ;
     };
-    imports.wbg.memory = memory || new WebAssembly.Memory({initial:30,maximum:32768,shared:true});
+    imports.wbg.memory = memory || new WebAssembly.Memory({initial:31,maximum:32768,shared:true});
 
     return imports;
 }

@@ -1,4 +1,4 @@
-// Runs pure-onnx-ocr v0.3.1 in a Web Worker so the page stays responsive while
+// Runs pure-onnx-ocr v0.3.2 in a Web Worker so the page stays responsive while
 // the (synchronous) WebAssembly inference runs.
 //
 // When the page is cross-origin isolated (coi-serviceworker.js adds the
